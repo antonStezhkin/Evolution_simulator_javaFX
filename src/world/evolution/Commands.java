@@ -23,14 +23,20 @@ public interface Commands {
 	byte MOVE = 1; //- move int the direction, the cell is looking.
 	byte TURN_HEAD = 23; //- change cell direction;
 	byte TAXIS = 25;
+	byte GAS = 26;
+	byte SINK = 27;
 
 	//COLONY INTERACTIONS
 	byte SHARE = 63;
 	byte GIVE = 62;
 	byte CHECK_COLONY = 61; // 0-16 as binary signal from colony mates and their position
-	byte DO_LIKE_ME = 59; // - tell colony mates to repeat an action.
+	byte DO_LIKE_ME = 60; // - tell colony mates to repeat an action.
 
 	//EXTRA
+	byte ACID = 50;
+	byte REMOVE_CORPSE = 51;
+	byte POISON = 52;
+	byte SLIME = 53;
 
 
 	//Directions. To turn, move, divide, etc
@@ -43,4 +49,13 @@ public interface Commands {
 	int DOWN = 7;
 	int DOWN_LEFT = 8;
 
+	//results
+	int SUCCESS = 1;
+	int INVALID_PARAM = 2;
+	int WORLD_BOTTOM = 3;
+	int STARVING = 4;
+	int CLONE = 5;
+	int RELATIVE = 6;
+	int ALIEN = 7;
+	int WORLD_TOP = 8;
 }

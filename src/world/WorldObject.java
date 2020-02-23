@@ -14,6 +14,8 @@ public interface WorldObject {
 	void live();
 	int getX();
 	int getY();
+	void setX(int x);
+	void setY(int y);
 	Color getColor();
 	double getOpacity();
 	boolean isAlive();

@@ -8,20 +8,28 @@ import world.WorldObject;
 public class DeadCell implements WorldObject {
 	private static int counter;
 	private int id;
-	public Color getColor(){return Color.DARKMAGENTA;}
+
+	public Color getColor() {
+		return Color.DARKMAGENTA;
+	}
+
 	private static final int MINERAL_RELEASE_MAX = 20;
-	private int x,y,organic,minerals;
+	private static int maxMinerals;
+	private int x, y, organic, minerals;
 	private boolean isDead = false;
 
 	@Override
-	public String toString(){ return "dead cell №"+id;}
+	public String toString() {
+		return "dead cell №" + id;
+	}
 
-	public DeadCell(int x, int y, int organic, int minerals){
+	public DeadCell(int x, int y, int organic, int minerals) {
 		this.x = x;
 		this.y = y;
 		this.organic = organic;
 		this.minerals = minerals;
-		World.addWorldObject(x,y,this);
+		maxMinerals = organic/13;
+		World.addWorldObject(x, y, this);
 		id = ++counter;
 	}
 
@@ -36,26 +44,30 @@ public class DeadCell implements WorldObject {
 	}
 
 	@Override
-	public void consumeOrganic(WorldObject food){}
+	public void consumeOrganic(WorldObject food) {
+	}
 
 	@Override
-	public void consumeMinerals(WorldObject food) {}
+	public void consumeMinerals(WorldObject food) {
+	}
 
 	@Override
-	public void eat(WorldObject food) {}
+	public void eat(WorldObject food) {
+	}
 
 	@Override
 	public int takeMinerals(int amount) {
-		int m = minerals > amount? amount : minerals;
+		int m = minerals > amount ? amount : minerals;
 		minerals -= m;
 		return m;
 	}
 
 	@Override
 	public int takeOrganic(int amount) {
-		int o = organic > amount? amount : organic;
+		int o = organic > amount ? amount : organic;
 		organic -= o;
-		if(organic < 1) die();
+		maxMinerals = organic/13;
+		if (organic < 1) die();
 		return o;
 	}
 
@@ -69,17 +81,18 @@ public class DeadCell implements WorldObject {
 	public void live() {
 		WorldCell c = World.getWorldMatrix()[y][x];
 		int outerMinerals = c.getMinerals();
-		int s = (minerals+outerMinerals)/2;
+		int s = (minerals + outerMinerals) / 2;
 		int delta = minerals - s;
-		delta = (delta > MINERAL_RELEASE_MAX)? MINERAL_RELEASE_MAX : (delta < -1*MINERAL_RELEASE_MAX)? -1*MINERAL_RELEASE_MAX : delta;
-		minerals -= delta;
-		c.addMinerals(delta);
-		int nY = y+1;
-		if(nY < World.getWorldMatrix().length){
-			if(World.getWorldObject(x,nY) == null){
-				World.moveWorldObject(x,y, null);
-				World.moveWorldObject(x, ++y, this);
-			}
+		delta = (delta > MINERAL_RELEASE_MAX) ? MINERAL_RELEASE_MAX : (delta < -1 * MINERAL_RELEASE_MAX) ? -1 * MINERAL_RELEASE_MAX : delta;
+		if(delta < 0 && maxMinerals < maxMinerals) {
+			minerals -= delta;
+			c.addMinerals(delta);
+		}if (minerals > maxMinerals){
+			c.addMinerals(minerals - maxMinerals);
+		}
+		int nY = y + 1;
+		if (World.getWorldObject(x, nY) == null) {
+			World.moveWorldObject(x, nY, this);
 		}
 	}
 
@@ -91,6 +104,16 @@ public class DeadCell implements WorldObject {
 	@Override
 	public int getY() {
 		return y;
+	}
+
+	@Override
+	public void setX(int x) {
+		this.x = x;
+	}
+
+	@Override
+	public void setY(int y) {
+		this.y = y;
 	}
 
 	@Override

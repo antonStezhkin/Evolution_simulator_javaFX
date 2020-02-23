@@ -90,6 +90,9 @@ public class World {
 	}
 
 	public static WorldObject getWorldObject(int x, int y) {
+		if(y < 0) return WorldsEdge.SKY;
+		if(y >= height) return WorldsEdge.BOTTOM;
+		x = x < 0? width-1 : x >= width? 0 : x;
 		return matrix[y][x].getWorldObject();
 	}
 
@@ -103,9 +106,16 @@ public class World {
 		newObjects.add(worldObject);
 	}
 
-	public static void moveWorldObject(int x, int y, WorldObject worldObject) {
+	public static boolean moveWorldObject(int x, int y, WorldObject worldObject) {
+		if(y<0 || y >= height) return false;
+		x = x < 0? width-1 : x >= width? 0 : x;
+		matrix[worldObject.getY()][worldObject.getX()].setWorldObject(null);
 		matrix[y][x].setWorldObject(worldObject);
+		worldObject.setX(x);
+		worldObject.setY(y);
+		return true;
 	}
+
 
 	public synchronized static void step() {
 		actionList.addAll(newObjects);
@@ -123,6 +133,8 @@ public class World {
 	}
 
 	public static WorldCell getCell(int x, int y){
+		if(y<0 || y >= height) return null;
+		x = x < 0? width-1 : x >= width? 0 : x;
 		return matrix[y][x];
 	}
 

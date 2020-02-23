@@ -2,8 +2,8 @@ package world;
 
 import javafx.scene.paint.Color;
 
-public enum Wall implements WorldObject {
-	BOTTOM, TOP;
+public enum WorldsEdge implements WorldObject {
+	BOTTOM, SKY;
 	@Override
 	public int getOrganic() {return 0;}
 
@@ -38,7 +38,17 @@ public enum Wall implements WorldObject {
 	public int getY() {return 0;}
 
 	@Override
-	public Color getColor() {return Color.DEEPSKYBLUE;}
+	public void setX(int x) {
+
+	}
+
+	@Override
+	public void setY(int y) {
+
+	}
+
+	@Override
+	public Color getColor() {return this == SKY? Color.DEEPSKYBLUE : Color.SILVER;}
 
 	@Override
 	public double getOpacity() {return 0;}
