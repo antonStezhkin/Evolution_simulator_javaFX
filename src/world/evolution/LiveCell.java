@@ -25,7 +25,7 @@ public class LiveCell implements WorldObject, Commands {
 	private static final int MAX_ORGANIC = 1000;
 	private static final int BASIC_COST = 7;
 	private static final int DIVISION_COST = 150;
-	private static final int MOVEMENT_COST = 5;
+	private static final int MOVEMENT_COST = 3;
 	private static final int EAT_COST = 20;
 	private static final int SURVIVAL_THRESHOLD = MAX_ORGANIC / 5;
 
@@ -99,13 +99,13 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private int eatWorldObject() {
-		if (organic < EAT_COST || minerals < EAT_MINERALS_COST) return 1;
+		if (organic < EAT_COST || minerals < EAT_MINERALS_COST) return STARVING;
 		organic -= EAT_COST;
 		minerals -= EAT_MINERALS_COST;
 		WorldObject neighbour = getNeighbourCell();
-		if (neighbour == null) return 2;
+		if (neighbour == null) return INVALID_PARAM;
 		eat(neighbour);
-		return 3;
+		return SUCCESS;
 	}
 
 	private WorldObject getNeighbourCell(int direction) {
@@ -146,6 +146,7 @@ public class LiveCell implements WorldObject, Commands {
 		if (organic <= 0) {
 			cell.addMinerals(minerals);
 			World.removeWorldObject(this);
+
 		} else {
 			new DeadCell(x, y, organic, minerals);
 		}
@@ -177,15 +178,39 @@ public class LiveCell implements WorldObject, Commands {
 					breakFlag = true;
 					break;
 				case GAS:
-					if(gas >= 2){ gotoRelativeCommandIndex(genome, 2);}
-					else{gas++; gotoRelativeCommandIndex(genome, 1);}
+					if (gas >= 2) {
+						gotoRelativeCommandIndex(genome, 2);
+					} else {
+						gas++;
+						gotoRelativeCommandIndex(genome, 1);
+					}
 					break;
 				case SINK:
-					if(gas <= -2){ gotoRelativeCommandIndex(genome, 2);}
-					else{gas--; gotoRelativeCommandIndex(genome, 1);}
+					if (gas <= -2) {
+						gotoRelativeCommandIndex(genome, 2);
+					} else {
+						gas--;
+						gotoRelativeCommandIndex(genome, 1);
+					}
 					break;
 				case MOVE:
 					nextGene = moveMe(genome);
+					gotoRelativeCommandIndex(genome, nextGene);
+					breakFlag = true;
+					break;
+				case TAXIS:
+					nextGene = taxis(genome);
+					gotoRelativeCommandIndex(genome, nextGene);
+					breakFlag = true;
+					break;
+
+				case SPAWN :
+					nextGene = simpleDivision(genome);
+					gotoRelativeCommandIndex(genome, nextGene);
+					breakFlag = true;
+					break;
+				case DIVIDE :
+					nextGene = divide();
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
@@ -198,31 +223,92 @@ public class LiveCell implements WorldObject, Commands {
 		passiveConsumeMinerals();
 		passiveFloat();
 		if (organic >= MAX_ORGANIC && minerals >= DIVISION_MINERALS_COST) {
-			divide();
+			if(divide() == ALIEN){
+				die();
+			}
+		}
+	}
+
+	private int simpleDivision(byte[] genome) {
+		int directionIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+		int mineralsIndex = (commandIndex - 2) % Species.GENOME_SIZE;
+		int organicIndex =  (commandIndex - 3) % Species.GENOME_SIZE;
+		int direction = (int)genome[directionIndex]%9;
+		if(direction == 4) return INVALID_PARAM;
+		if(organic < DIVISION_COST || minerals < DIVISION_MINERALS_COST) return  STARVING;
+		int org = (int)genome[organicIndex]*organic/128;
+		int min = (int)genome[mineralsIndex]*minerals/128;
+		if(organic - (org+DIVISION_COST) < BASIC_COST || minerals - (min+DIVISION_MINERALS_COST) < BASIC_MINERALS_COST) return STARVING;
+		if(org < BASIC_COST || min < BASIC_MINERALS_COST) return STARVING;
+		return divide(org, min, direction);
+	}
+
+	private int taxis(byte[] genome) {
+		if (organic < MOVEMENT_COST) return STARVING;
+		int paramIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+		paramIndex = paramIndex < 0? Species.GENOME_SIZE + paramIndex : paramIndex;
+		int max = Integer.MIN_VALUE;
+		int tY = -1, tX = 0;
+		try{
+		boolean light = genome[paramIndex] % 2 == 1;
+		for (int i = -1; i < 2; i++) {
+			int nY = y + i;
+			for (int j = -1; j < 2; j++) {
+				if (nY < 0 || nY >= World.getHeight()) continue;
+				int nX = x + j;
+				WorldCell worldCell = World.getCell(nX, nY);
+				int c = light ? worldCell.getLight() : worldCell.getMinerals();
+				if (c > max) {
+					max = c;
+					tY = nY;
+					tX = nX;
+				}
+			}
+		}
+		WorldObject worldObject = World.getWorldObject(tX, tY);
+		if (worldObject != null) {
+			if (worldObject instanceof LiveCell) {
+				return checkRelation((LiveCell) worldObject);
+			} else {
+				return ALIEN;
+			}
+		} else {
+			int direction = (tY - y + 1) * 3 + (tX - x + 1);
+			if (direction == 4) return INVALID_PARAM;
+			currentDirection = direction;
+			organic -= MOVEMENT_COST;
+			World.moveWorldObject(tX, tY, this);
+			return SUCCESS;
+		}
+		}catch (Exception e){
+			return INVALID_PARAM;
 		}
 	}
 
 	private int moveMe(byte[] genome) {
-		if(organic < MOVEMENT_COST) return STARVING;
-		int paramIndex = (commandIndex-1) % Species.GENOME_SIZE;
+		if (organic < MOVEMENT_COST) return STARVING;
+		int paramIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+		paramIndex =  paramIndex < 0? Species.GENOME_SIZE + paramIndex : paramIndex;
 		int direction = genome[paramIndex] % 9;
 		//invalid direction
-		if(direction == 4) return INVALID_PARAM;
+		if (direction == 4) return INVALID_PARAM;
 
-		int nX = (direction % 3) -1;
-		int nY = (direction / 3) -1;
+		int nX = (direction % 3) - 1;
+		int nY = (direction / 3) - 1;
 		nY += y;
 
 		//World's edge
-		if(nY < 0) return WORLD_TOP;
-		if(nY >= World.getHeight()) return WORLD_BOTTOM;
+		if (nY < 0) return WORLD_TOP;
+		if (nY >= World.getHeight()) return WORLD_BOTTOM;
 		nX += x;
 
 		//Another object blocking the way
 		WorldObject worldObject = World.getWorldObject(nX, nY);
-		if(worldObject != null) {
+		if (worldObject != null) {
 			if (worldObject instanceof LiveCell) {
 				return checkRelation((LiveCell) worldObject);
+			} else {
+				return ALIEN;
 			}
 		}
 
@@ -232,26 +318,26 @@ public class LiveCell implements WorldObject, Commands {
 		return SUCCESS;
 	}
 
-	private int checkRelation(LiveCell other){
-		if(other == null) return INVALID_PARAM;
-		if(other.genomeHash == genomeHash) return CLONE;
+	private int checkRelation(LiveCell other) {
+		if (other == null) return INVALID_PARAM;
+		if (other.genomeHash == genomeHash) return CLONE;
 		int differences = 0;
 		byte[] genome = species.getGenome();
 		byte[] otherGenome = other.species.getGenome();
-		for(int i=0; i<genome.length; i++){
-			if(genome[i] != otherGenome[i]){
+		for (int i = 0; i < genome.length; i++) {
+			if (genome[i] != otherGenome[i]) {
 				differences++;
-				if(differences > TOLERANCE) return ALIEN;
+				if (differences > TOLERANCE) return ALIEN;
 			}
 		}
 		return RELATIVE;
 	}
 
-	private void passiveFloat(){
-		int k = gas > 0? 1 : gas < 0? -1 : 0;
-		if(k == 0) return;
-		int nY = y+k;
-		if(World.getWorldObject(x, nY) == null){
+	private void passiveFloat() {
+		int k = gas > 0 ? 1 : gas < 0 ? -1 : 0;
+		if (k == 0) return;
+		int nY = y + k;
+		if (World.getWorldObject(x, nY) == null) {
 			World.moveWorldObject(x, nY, this);
 		}
 	}
@@ -265,31 +351,40 @@ public class LiveCell implements WorldObject, Commands {
 		return divide(kidOrganic, kidMinerals, getOppositeDirection(currentDirection));
 	}
 
-	private int getOppositeDirection(int direction){
-		switch (direction % 9){
-			case UP_LEFT : return DOWN_RIGHT;
-			case DOWN_RIGHT: return UP_LEFT;
+	private int getOppositeDirection(int direction) {
+		switch (direction % 9) {
+			case UP_LEFT:
+				return DOWN_RIGHT;
+			case DOWN_RIGHT:
+				return UP_LEFT;
 
-			case UP: return DOWN;
-			case DOWN: return UP;
+			case UP:
+				return DOWN;
+			case DOWN:
+				return UP;
 
-			case UP_RIGHT : return DOWN_LEFT;
-			case DOWN_LEFT : return UP_RIGHT;
+			case UP_RIGHT:
+				return DOWN_LEFT;
+			case DOWN_LEFT:
+				return UP_RIGHT;
 
-			case LEFT : return RIGHT;
-			case RIGHT : return LEFT;
-			default: break;
+			case LEFT:
+				return RIGHT;
+			case RIGHT:
+				return LEFT;
+			default:
+				break;
 		}
 		return 4;
 	}
 
 	private int divide(int kidOrganic, int kidMinerals, int startPosition) {
-		int startY = (startPosition / 3)%3;
+		int startY = (startPosition / 3) % 3;
 		int startX = startPosition % 3;
 		for (int y1 = 0; y1 < 3; y1++) {
-			int cY = ((y1 + startY)%3)-1;
+			int cY = ((y1 + startY) % 3) - 1;
 			for (int x1 = 0; x1 < 3; x1++) {
-				int cX = ((x1 + startX)%3)-1;
+				int cX = ((x1 + startX) % 3) - 1;
 				if (cX == 1 && cY == 1) continue;
 				int worldY = y + cY;
 				int worldX = x + cX;
@@ -299,23 +394,22 @@ public class LiveCell implements WorldObject, Commands {
 				}
 				if (World.getWorldObject(worldX, worldY) == null) {
 					if (organic < DIVISION_COST || minerals < DIVISION_MINERALS_COST) {
-						return 2;
+						return STARVING;
 					}
 					createNewCell(worldX, worldY, kidOrganic, kidMinerals);
-					return 1;
+					return SUCCESS;
 				}
 			}
 		}
 		//failed to divide
-		die();
-		return 2;
+		return ALIEN;
 	}
 
 	private void createNewCell(int x, int y, int kidOrganic, int kidMinerals) {
 		organic -= DIVISION_COST;
 		minerals -= DIVISION_MINERALS_COST / 2;
-		int random = (int)(System.nanoTime() % (Species.MUTATION_FACTOR+1));
-		LiveCell kid =null;
+		int random = (int) (System.nanoTime() % (Species.MUTATION_FACTOR + 1));
+		LiveCell kid = null;
 		if (random > 1) {
 			kid = new LiveCell(species, x, y, takeMinerals(kidMinerals), takeOrganic(kidOrganic));
 		} else {
@@ -328,9 +422,9 @@ public class LiveCell implements WorldObject, Commands {
 	private void photosynthesis() {
 		if (organic > MAX_ORGANIC) return;
 		WorldCell c = getMyCell();
-		int light = (int) Math.round(0.75 * c.getLight() / (World.WATER_OPACITY - organic * World.CELL_SHADOW_Q));
+		int light = (int) Math.round(0.80 * c.getLight() / (World.WATER_OPACITY - organic * World.CELL_SHADOW_Q));
 		light /= 15;
-		double bonus = 0.3;
+		double bonus = 0.4;
 		for (int i = 0; i < mates.length; i++) {
 			if (mates[i] != null) bonus += 0.5;
 		}
@@ -396,7 +490,7 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	public void setCurrentDirection(int currentDirection) {
-		this.currentDirection = currentDirection%9 == 4? UP : currentDirection%9;
+		this.currentDirection = currentDirection % 9 == 4 ? UP : currentDirection % 9;
 	}
 
 	@Override

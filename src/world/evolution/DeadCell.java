@@ -10,11 +10,11 @@ public class DeadCell implements WorldObject {
 	private int id;
 
 	public Color getColor() {
-		return Color.DARKMAGENTA;
+		return Color.DARKGRAY;
 	}
 
 	private static final int MINERAL_RELEASE_MAX = 20;
-	private static int maxMinerals;
+	private int maxMinerals;
 	private int x, y, organic, minerals;
 	private boolean isDead = false;
 
@@ -28,7 +28,7 @@ public class DeadCell implements WorldObject {
 		this.y = y;
 		this.organic = organic;
 		this.minerals = minerals;
-		maxMinerals = organic/13;
+		maxMinerals = organic/10;
 		World.addWorldObject(x, y, this);
 		id = ++counter;
 	}
@@ -66,7 +66,7 @@ public class DeadCell implements WorldObject {
 	public int takeOrganic(int amount) {
 		int o = organic > amount ? amount : organic;
 		organic -= o;
-		maxMinerals = organic/13;
+		maxMinerals = organic/10;
 		if (organic < 1) die();
 		return o;
 	}
@@ -84,10 +84,11 @@ public class DeadCell implements WorldObject {
 		int s = (minerals + outerMinerals) / 2;
 		int delta = minerals - s;
 		delta = (delta > MINERAL_RELEASE_MAX) ? MINERAL_RELEASE_MAX : (delta < -1 * MINERAL_RELEASE_MAX) ? -1 * MINERAL_RELEASE_MAX : delta;
-		if (minerals > maxMinerals){
-			c.addMinerals(minerals - maxMinerals);
-			minerals = maxMinerals;
-
+		if (minerals-delta > maxMinerals){
+//			c.addMinerals(minerals - maxMinerals);
+//			minerals = maxMinerals;
+			delta += minerals - maxMinerals;
+			delta =(delta > minerals)? minerals : minerals - delta > maxMinerals? -1*(minerals - maxMinerals) : delta;
 		}
 		minerals -= delta;
 		c.addMinerals(delta);

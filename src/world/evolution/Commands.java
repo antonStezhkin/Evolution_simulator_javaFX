@@ -9,7 +9,7 @@ public interface Commands {
 
 	//REPRODUCTION
 	byte DIVIDE = 16; // - make a free and equal clone; The child cell gets minerals/2 minerals and energy/2 energy. parent cell gets minerals - minerals/2 minerals and energy - energy/2 energy;
-	byte SPAWN = 22; // - spawn a kid with minimal amount of resources.
+	byte SPAWN = 22; // - spawn a kid with genetically determined amount of resources.
 	byte GROW = 24; // - spawn an attached colony cell. thus growing into a colony.
 
 	//SENSORS

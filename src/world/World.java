@@ -48,7 +48,7 @@ public class World {
 //				organic = organic < 0 ? 0 : organic;
 //				if (organic > 0) {new LiveCell(defaultSpecies, x, y, 10, organic);}
 //				if (organic > 0) matrix[i][x].setWorldObject(new DeadCell());
-				matrix[y][x].setMinerals(100);
+				matrix[y][x].setMinerals(120);
 				}
 			}
 
@@ -97,8 +97,11 @@ public class World {
 	}
 
 	public static void removeWorldObject(WorldObject worldObject) {
-		addWorldObject(worldObject.getX(), worldObject.getY(), null);
-		//actionList.remove(worldObject);
+		int x = worldObject.getX();
+		int y = worldObject.getY();
+		matrix[y][x].setWorldObject(null);
+		System.out.println(matrix[y][x]);
+		newObjects.remove(worldObject);
 	}
 
 	public static void addWorldObject(int x, int y, WorldObject worldObject) {
