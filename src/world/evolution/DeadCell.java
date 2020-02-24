@@ -10,7 +10,7 @@ public class DeadCell implements WorldObject {
 	private int id;
 
 	public Color getColor() {
-		return Color.DARKGRAY;
+		return Color.BLACK;
 	}
 
 	private static final int MINERAL_RELEASE_MAX = 20;
