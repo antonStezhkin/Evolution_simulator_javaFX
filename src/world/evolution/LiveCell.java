@@ -315,6 +315,7 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private void poopToMinerals(byte[]genome) {
+		if(minerals > MAX_MINERALS) return;
 		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
 		amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
 		int amount = genome[amountIndex]*2;
