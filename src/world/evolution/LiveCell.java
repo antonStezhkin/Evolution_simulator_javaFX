@@ -232,6 +232,11 @@ public class LiveCell implements WorldObject, Commands {
 		int directionIndex = (commandIndex - 1) % Species.GENOME_SIZE;
 		int mineralsIndex = (commandIndex - 2) % Species.GENOME_SIZE;
 		int organicIndex =  (commandIndex - 3) % Species.GENOME_SIZE;
+
+		directionIndex = directionIndex < 0? Species.GENOME_SIZE + directionIndex : directionIndex;
+		mineralsIndex = mineralsIndex < 0? Species.GENOME_SIZE + mineralsIndex : mineralsIndex;
+		organicIndex = organicIndex < 0? Species.GENOME_SIZE  + organicIndex : organicIndex;
+
 		int direction = (int)genome[directionIndex]%9;
 		if(direction == 4) return INVALID_PARAM;
 		if(organic < DIVISION_COST || minerals < DIVISION_MINERALS_COST) return  STARVING;

@@ -8,9 +8,10 @@ import world.WorldObject;
 public class DeadCell implements WorldObject {
 	private static int counter;
 	private int id;
+	private int step = 0;
 
 	public Color getColor() {
-		return Color.BLACK;
+		return Color.web("#505050");
 	}
 
 	private static final int MINERAL_RELEASE_MAX = 20;
@@ -92,9 +93,14 @@ public class DeadCell implements WorldObject {
 		}
 		minerals -= delta;
 		c.addMinerals(delta);
-		int nY = y + 1;
-		if (World.getWorldObject(x, nY) == null) {
-			World.moveWorldObject(x, nY, this);
+		if(step > 4) {
+			int nY = y + 1;
+			if (World.getWorldObject(x, nY) == null) {
+				World.moveWorldObject(x, nY, this);
+			}
+			step = 0;
+		}else {
+			step++;
 		}
 	}
 
