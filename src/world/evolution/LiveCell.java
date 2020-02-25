@@ -26,8 +26,9 @@ public class LiveCell implements WorldObject, Commands {
 	private static final int BASIC_COST = 7;
 	private static final int DIVISION_COST = 150;
 	private static final int MOVEMENT_COST = 3;
-	private static final int EAT_COST = 20;
+	private static final int EAT_COST = 5;
 	private static final int SURVIVAL_THRESHOLD = MAX_ORGANIC / 5;
+	private static final int SUFFER_THRESHOLD = MAX_ORGANIC / 2;
 	private static final int POOP_TO_MINERALS_COST = 1;
 
 
@@ -35,7 +36,7 @@ public class LiveCell implements WorldObject, Commands {
 	private static final int MAX_MINERALS = 500;
 	public static final int DIVISION_MINERALS_COST = 120;
 	private static final int BASIC_MINERALS_COST = 2;
-	private static final int EAT_MINERALS_COST = 6;
+	private static final int EAT_MINERALS_COST = 2;
 	private static final int MINERAL_RELEASE_MAX = 50;
 	private static final int PASSIVE_MINERAL_MAX = 27;
 
@@ -72,17 +73,16 @@ public class LiveCell implements WorldObject, Commands {
 	public void suffer() {
 		if (organic < SURVIVAL_THRESHOLD) {
 			die();
-		} else {
-			organic = organic / 2;
+		} else if(organic < SUFFER_THRESHOLD){
+			organic -= organic / 4;
 			WorldCell c = World.getWorldMatrix()[y][x];
 			int outerMinerals = c.getMinerals();
-			int s = (minerals + outerMinerals) / 2;
+			int s = (minerals + outerMinerals) / 4;
 			int delta = minerals - s;
 			delta = (delta > MINERAL_RELEASE_MAX) ? MINERAL_RELEASE_MAX : (delta < -1 * MINERAL_RELEASE_MAX) ? -1 * MINERAL_RELEASE_MAX : delta;
 			minerals -= delta;
 			c.addMinerals(delta);
 		}
-
 	}
 
 	@Override
@@ -119,7 +119,7 @@ public class LiveCell implements WorldObject, Commands {
 		if (y >= World.getHeight()) return WorldsEdge.BOTTOM;
 		if (y < 0) return WorldsEdge.SKY;
 		nX = nX < 0 ? World.getWidth() - 1 : nX >= World.getWidth() ? 0 : nX;
-		return World.getCell(nX, nY).getWorldObject();
+		return World.getWorldObject(nX, nY);
 	}
 
 	private WorldObject getNeighbourCell() {
@@ -224,11 +224,14 @@ public class LiveCell implements WorldObject, Commands {
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
-				case PUMP_MINERALS :
-					pumpMinerals();
+//				case PUMP_MINERALS :
+//					pumpMinerals();
+//					incrementCommandIndex(genome);
+//					break;
+				case ACID :
+					acid();
 					incrementCommandIndex(genome);
 					break;
-
 				default:
 					gotoRelativeCommandIndex(genome, 0);
 					break;
@@ -244,6 +247,29 @@ public class LiveCell implements WorldObject, Commands {
 		}
 	}
 
+	private void acid() {
+		int nearbyTiles = (y-1 < 0 || y+1 >= World.getHeight())? 6 : 8;
+		if(organic < (BASIC_COST*2)+(nearbyTiles*10)) return;
+		organic -= nearbyTiles*10;
+		for(int i = -1; i<2; i++){
+			int tY = y+i;
+			if(tY < 0 || tY >= World.getHeight()) continue;
+			for(int j=-1; j<2; j++){
+				if(i == 0 && j == 0) continue;
+				int tX = j+x;
+				tX = tX<0? World.getWidth()-1 : tX >= World.getWidth()? 0 : tX;
+				WorldObject worldObject = World.getWorldObject(tX,tY);
+				if(worldObject != null){
+					if(worldObject instanceof DeadCell){
+						worldObject.takeOrganic(150);
+					}else {
+						worldObject.takeOrganic(5);
+					}
+				}
+			}
+		}
+	}
+
 	private int mineralsToOrganic(byte[]genome) {
 		if(organic >= MAX_ORGANIC) return SUCCESS;
 		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
@@ -252,6 +278,7 @@ public class LiveCell implements WorldObject, Commands {
 		if(minerals - amount < BASIC_MINERALS_COST * 2) return STARVING;
 		minerals -= amount;
 		organic += amount*3;
+		World.addPoop(amount);
 		return SUCCESS;
 	}
 
@@ -272,8 +299,9 @@ public class LiveCell implements WorldObject, Commands {
 		organic -= mineralsAmount;
 		totalMinerals -= mineralsAmount;
 		minerals += mineralsAmount;
-		int part = totalMinerals/nearbyTiles;
-		int rest = totalMinerals%nearbyTiles;
+		int part = totalMinerals / nearbyTiles;
+		int rest = totalMinerals % nearbyTiles;
+		if(part*nearbyTiles + rest != totalMinerals) System.out.println("FUCK!");
 		for(int i = -1; i<2; i++){
 			int tY = y+i;
 			if(tY < 0 || tY >= World.getHeight()) continue;
@@ -472,11 +500,12 @@ public class LiveCell implements WorldObject, Commands {
 				}
 			}
 		}
-		if(World.getWorldObject(x+1, y+1) == null){
+		int nX = x+1 >= World.getWidth()? 0 : x+1;
+		if(World.getWorldObject(nX, y+1) == null && y+1 < World.getHeight()){
 			if (organic < DIVISION_COST || minerals < DIVISION_MINERALS_COST) {
 				return STARVING;
 			}
-			createNewCell(x+1, y+1, kidOrganic, kidMinerals);
+ 			createNewCell(nX, y+1, kidOrganic, kidMinerals);
 			return SUCCESS;
 		}
 		//failed to divide
@@ -501,7 +530,7 @@ public class LiveCell implements WorldObject, Commands {
 		if (organic > MAX_ORGANIC) return;
 		WorldCell c = getMyCell();
 		int light = (int) Math.round(0.80 * c.getLight() / (World.WATER_OPACITY - organic * World.CELL_SHADOW_Q));
-		light /= 15;
+		light /= 5;
 		double bonus = 0.4;
 		for (int i = 0; i < mates.length; i++) {
 			if (mates[i] != null) bonus += 0.5;
@@ -588,6 +617,7 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public void setY(int y) {
+		if(y >0 && y < World.getHeight())
 		this.y = y;
 	}
 

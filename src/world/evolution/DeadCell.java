@@ -11,7 +11,7 @@ public class DeadCell implements WorldObject {
 	private int step = 0;
 
 	public Color getColor() {
-		return Color.web("#505050");
+		return Color.GRAY;
 	}
 
 	private static final int MINERAL_RELEASE_MAX = 20;
