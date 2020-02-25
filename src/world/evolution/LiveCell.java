@@ -552,6 +552,7 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private void passiveConsumeMinerals() {
+		if(minerals > MAX_MINERALS) return;
 		WorldCell cell = getMyCell();
 		int outerMinerals = cell.getMinerals();
 		int delta = outerMinerals - minerals;
