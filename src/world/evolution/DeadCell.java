@@ -84,11 +84,11 @@ public class DeadCell implements WorldObject {
 		int s = (minerals + outerMinerals) / 2;
 		int delta = minerals - s;
 		delta = (delta > MINERAL_RELEASE_MAX) ? MINERAL_RELEASE_MAX : (delta < -1 * MINERAL_RELEASE_MAX) ? -1 * MINERAL_RELEASE_MAX : delta;
-		if (minerals-delta > maxMinerals){
+		if (minerals-delta >= maxMinerals){
 //			c.addMinerals(minerals - maxMinerals);
 //			minerals = maxMinerals;
 			delta += minerals - maxMinerals;
-			delta =(delta > minerals)? minerals : minerals - delta > maxMinerals? -1*(minerals - maxMinerals) : delta;
+			delta = (minerals-delta > maxMinerals)? 0 : (minerals-delta < 0)? minerals : delta;
 		}
 		minerals -= delta;
 		c.addMinerals(delta);

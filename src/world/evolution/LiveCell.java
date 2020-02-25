@@ -33,7 +33,7 @@ public class LiveCell implements WorldObject, Commands {
 	private static final int MAX_MINERALS = 500;
 	public static final int DIVISION_MINERALS_COST = 120;
 	private static final int BASIC_MINERALS_COST = 2;
-	private static final int EAT_MINERALS_COST = 10;
+	private static final int EAT_MINERALS_COST = 6;
 	private static final int MINERAL_RELEASE_MAX = 50;
 	private static final int PASSIVE_MINERAL_MAX = 27;
 
@@ -146,7 +146,6 @@ public class LiveCell implements WorldObject, Commands {
 		if (organic <= 0) {
 			cell.addMinerals(minerals);
 			World.removeWorldObject(this);
-
 		} else {
 			new DeadCell(x, y, organic, minerals);
 		}
@@ -379,12 +378,12 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private int divide(int kidOrganic, int kidMinerals, int startPosition) {
-		int startY = (startPosition / 3) % 3;
+		int startY = (startPosition / 3)%3;
 		int startX = startPosition % 3;
 		for (int y1 = 0; y1 < 3; y1++) {
-			int cY = ((y1 + startY) % 3) - 1;
+			int cY = ((y1 + startY)%3)-1;
 			for (int x1 = 0; x1 < 3; x1++) {
-				int cX = ((x1 + startX) % 3) - 1;
+				int cX = ((x1 + startX)%3)-1;
 				if (cX == 1 && cY == 1) continue;
 				int worldY = y + cY;
 				int worldX = x + cX;
