@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.Random;
 
 public class World {
-	public static final int WORLD_BRIGHTNESS = 1015;
+	public static final int WORLD_BRIGHTNESS = 1215;
 	public static final double WATER_OPACITY = 0.985;
 
 	public static final double CELL_SHADOW_Q = 1 / 15000d;
@@ -100,11 +100,12 @@ public class World {
 		int x = worldObject.getX();
 		int y = worldObject.getY();
 		matrix[y][x].setWorldObject(null);
-		System.out.println(matrix[y][x]);
 		newObjects.remove(worldObject);
 	}
 
 	public static void addWorldObject(int x, int y, WorldObject worldObject) {
+		if(y<0 || y >= height) return;
+		x = x < 0? width-1 : x >= width? 0 : x;
 		matrix[y][x].setWorldObject(worldObject);
 		newObjects.add(worldObject);
 	}
@@ -160,6 +161,12 @@ public class World {
 			}
 			invisiblePoop -= part * width;
 		}
+	}
+
+	public static int takePoop(int amount){
+		amount = invisiblePoop > amount? amount : invisiblePoop;
+		invisiblePoop -= amount;
+		return amount;
 	}
 
 	private static int calculateSum(int y) {

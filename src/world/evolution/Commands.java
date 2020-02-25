@@ -4,8 +4,9 @@ public interface Commands {
 	//NUTRITION
 	byte PHOTOSYNTHESIS = 32; // Get some energy depending on brightness level. If there is no light, the bot will loose some energy
 	byte EAT = 34; // - Try to eat the thing, th bot is looking at. If not possible - make conditional redirect.
-	byte CONSUME_MINERALS = 30; // - Consume some minrals from the environment, depending on mineral level.
+	byte PUMP_MINERALS = 30; // - Consume some minrals from the environment, depending on mineral level.
 	byte EAT_MINERALS = 33; // - convert some minerals to energy.  Produces waste.
+	byte EAT_POOP = 35;
 
 	//REPRODUCTION
 	byte DIVIDE = 16; // - make a free and equal clone; The child cell gets minerals/2 minerals and energy/2 energy. parent cell gets minerals - minerals/2 minerals and energy - energy/2 energy;
@@ -37,6 +38,7 @@ public interface Commands {
 	byte REMOVE_CORPSE = 51;
 	byte POISON = 52;
 	byte SLIME = 53;
+	byte RELEASE_MINERALS = 54;
 
 
 	//Directions. To turn, move, divide, etc
