@@ -33,7 +33,7 @@ public class LiveCell implements WorldObject, Commands {
 
 
 	//mineral costs
-	private static final int MAX_MINERALS = 500;
+	private static final int MAX_MINERALS = 240;
 	public static final int DIVISION_MINERALS_COST = 120;
 	private static final int BASIC_MINERALS_COST = 2;
 	private static final int EAT_MINERALS_COST = 2;
