@@ -27,8 +27,8 @@ public class LiveCell implements WorldObject, Commands {
 	private static final int DIVISION_COST = 150;
 	private static final int MOVEMENT_COST = 3;
 	private static final int EAT_COST = 5;
-	private static final int SURVIVAL_THRESHOLD = MAX_ORGANIC / 5;
-	private static final int SUFFER_THRESHOLD = MAX_ORGANIC / 2;
+	private static final int SURVIVAL_THRESHOLD = MAX_ORGANIC / 10;
+	private static final int SUFFER_THRESHOLD = MAX_ORGANIC / 5;
 	private static final int POOP_TO_MINERALS_COST = 1;
 
 
@@ -143,12 +143,13 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public void die() {
-		WorldCell cell = World.getWorldMatrix()[y][x];
 		isDead = true;
 		if (organic <= 0) {
+			WorldCell cell = World.getWorldMatrix()[y][x];
 			cell.addMinerals(minerals);
 			World.removeWorldObject(this);
 		} else {
+			World.removeWorldObject(this);
 			new DeadCell(x, y, organic, minerals);
 		}
 		species.decreasePopulation();
@@ -167,6 +168,7 @@ public class LiveCell implements WorldObject, Commands {
 		byte[] genome = species.getGenome();
 		int nextGene;
 		for (int i = 0; i < MAX_COMMANDS_PER_TURN; i++) {
+			if(isDead) return;
 			switch (genome[commandIndex]) {
 				case PHOTOSYNTHESIS:
 					photosynthesis();
@@ -215,19 +217,23 @@ public class LiveCell implements WorldObject, Commands {
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
-				case EAT_POOP :
-					poopToMinerals(genome);
-					incrementCommandIndex(genome);
-					break;
+//				case EAT_POOP :
+//					poopToMinerals(genome);
+//					incrementCommandIndex(genome);
+//					break;
 				case EAT_MINERALS :
 					nextGene = mineralsToOrganic(genome);
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
-//				case PUMP_MINERALS :
-//					pumpMinerals();
-//					incrementCommandIndex(genome);
-//					break;
+				case PUMP_MINERALS :
+					pumpMinerals();
+					incrementCommandIndex(genome);
+					break;
+				case DESTROY_CORPSE :
+					destroyDeadCell();
+					incrementCommandIndex(genome);
+					break;
 				case ACID :
 					acid();
 					incrementCommandIndex(genome);
@@ -243,6 +249,28 @@ public class LiveCell implements WorldObject, Commands {
 		if (organic >= MAX_ORGANIC && minerals >= DIVISION_MINERALS_COST) {
 			if(divide() == ALIEN){
 				die();
+			}
+		}
+	}
+
+	private void destroyDeadCell() {
+
+		if(organic < BASIC_COST*5) return;
+		for(int i = -1; i<2; i++){
+			int tY = y+i;
+			if(tY < 0 || tY >= World.getHeight()) continue;
+			for(int j=-1; j<2; j++){
+				if(i == 0 && j == 0) continue;
+				int tX = j+x;
+				tX = tX<0? World.getWidth()-1 : tX >= World.getWidth()? 0 : tX;
+				WorldObject worldObject = World.getWorldObject(tX,tY);
+				if(worldObject != null){
+					if(worldObject instanceof DeadCell){
+						worldObject.die();
+						organic -= 30;
+						return;
+					}
+				}
 			}
 		}
 	}
@@ -434,6 +462,7 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private void passiveFloat() {
+		if(isDead) return;
 		int k = gas > 0 ? 1 : gas < 0 ? -1 : 0;
 		if (k == 0) return;
 		int nY = y + k;
@@ -552,7 +581,7 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private void passiveConsumeMinerals() {
-		if(minerals > MAX_MINERALS) return;
+		if(minerals > MAX_MINERALS || isDead) return;
 		WorldCell cell = getMyCell();
 		int outerMinerals = cell.getMinerals();
 		int delta = outerMinerals - minerals;
@@ -570,7 +599,6 @@ public class LiveCell implements WorldObject, Commands {
 		minerals += delta;
 		outerMinerals -= delta;
 		cell.setMinerals(outerMinerals);
-
 	}
 
 	private void basicMetabolism() {
@@ -619,7 +647,7 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public void setY(int y) {
-		if(y >0 && y < World.getHeight())
+		if(y >= 0 && y < World.getHeight())
 		this.y = y;
 	}
 
@@ -636,5 +664,10 @@ public class LiveCell implements WorldObject, Commands {
 	@Override
 	public boolean isAlive() {
 		return !isDead;
+	}
+
+	@Override
+	public String toString() {
+		return species.getName();
 	}
 }

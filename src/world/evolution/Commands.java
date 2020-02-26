@@ -39,6 +39,7 @@ public interface Commands {
 	byte POISON = 52;
 	byte SLIME = 53;
 	byte RELEASE_MINERALS = 54;
+	byte DESTROY_CORPSE = 55;
 
 
 	//Directions. To turn, move, divide, etc

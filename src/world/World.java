@@ -1,6 +1,7 @@
 package world;
 
 import world.evolution.Commands;
+import world.evolution.DeadCell;
 import world.evolution.LiveCell;
 import world.evolution.Species;
 
@@ -11,12 +12,12 @@ public class World {
 	public static final int WORLD_BRIGHTNESS = 1215;
 	public static final double WATER_OPACITY = 0.985;
 
-	public static final double CELL_SHADOW_Q = 1 / 15000d;
+	public static final double CELL_SHADOW_Q = 1 / 17000d;
 
 	private static WorldCell[][] matrix;
 	private static int width, height;
 	private static Diffusion diffusion;
-	private static double diffusionSpeed = 3;
+	private static double diffusionSpeed = 2;
 	private static int invisiblePoop = 0;
 
 
@@ -39,6 +40,7 @@ public class World {
 			defaultGenome[i] = Commands.PHOTOSYNTHESIS;
 		}
 		Species defaultSpecies = new Species(defaultGenome);
+		defaultSpecies.setName("first");
 
 		for (int y = 0; y < height; y++) {
 			matrix[y] = new WorldCell[width];
@@ -127,8 +129,14 @@ public class World {
 		WorldObject current;
 		while ((current = actionList.poll()) != null) {
 			current.live();
+			if(current instanceof DeadCell){
+				((DeadCell) current).isFuckedUp = true;
+			}
 			if (current.isAlive()) {
 				newObjects.add(current);
+				if(current instanceof DeadCell){
+					((DeadCell) current).isFuckedUp = false;
+				}
 			}
 		}
 		calculateLight();
@@ -151,7 +159,8 @@ public class World {
 				if (calculateSum(y) < levelLimit) {
 					for (int l = 0; l < part; l++) {
 						int lY = y-l;
-						for (int i = 0; i < matrix[height - 1].length; i++) {
+						if(lY < 0) lY = height-1;
+						for (int i = 0; i < width; i++) {
 							matrix[lY][i].addMinerals(1);
 						}
 					}
@@ -160,6 +169,11 @@ public class World {
 				}
 			}
 			invisiblePoop -= part * width;
+		}
+		for (int i = 0; i < width; i++){
+			if(matrix[height-1][i].getMinerals() < 20){
+				matrix[height-1][i].addMinerals(10);
+			}
 		}
 	}
 

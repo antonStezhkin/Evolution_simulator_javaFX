@@ -17,11 +17,12 @@ public class DeadCell implements WorldObject {
 	private static final int MINERAL_RELEASE_MAX = 20;
 	private int maxMinerals;
 	private int x, y, organic, minerals;
-	private boolean isDead = false;
+	private volatile boolean isDead = false;
 
+	public boolean isFuckedUp;
 	@Override
 	public String toString() {
-		return "dead cell №" + id;
+		return isFuckedUp? "["+x+","+y+"] "+ isDead + " fuckedUp":"dead cell №" + id;
 	}
 
 	public DeadCell(int x, int y, int organic, int minerals) {
@@ -74,13 +75,15 @@ public class DeadCell implements WorldObject {
 
 	@Override
 	public void die() {
-		World.removeWorldObject(this);
 		isDead = true;
+		World.removeWorldObject(this);
+		World.getCell(x,y).addMinerals(minerals);
+		minerals = 0;
 	}
 
 	@Override
 	public void live() {
-		WorldCell c = World.getWorldMatrix()[y][x];
+		WorldCell c = World.getCell(x,y);
 		int outerMinerals = c.getMinerals();
 		int s = (minerals + outerMinerals) / 2;
 		int delta = minerals - s;

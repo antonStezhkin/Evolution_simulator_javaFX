@@ -6,7 +6,9 @@ public class Species {
 	private final byte[]genome;
 	private final int hash;
 	private final int geneticDistance;
-	private static final String UNKNOWN = "unknown species";
+	private static final String UNKNOWN = "unknown";
+	private static int idCounter = 0;
+	int id = 0;
 
 	public void setName(String name) {
 		this.name = name;
@@ -15,7 +17,7 @@ public class Species {
 	private int population;
 	private String name;
 	public final static int GENOME_SIZE = 64;
-    public final static int MUTATION_FACTOR = 8;
+    public final static int MUTATION_FACTOR = 10;
 
 	public Species(byte[] genome) {
 		this.genome = genome;
@@ -23,6 +25,7 @@ public class Species {
 		population = 0;
 		geneticDistance = 0;
 		SpeciesTree.INSTANCE.add(this);
+		id = ++idCounter;
 	}
 
 	private Species(byte[] genome, int geneticDistance) {
@@ -31,6 +34,7 @@ public class Species {
 		population = 0;
 		this.geneticDistance = geneticDistance;
 		SpeciesTree.INSTANCE.add(this);
+		id = ++idCounter;
 	}
 
 	public int getHash() {
@@ -67,6 +71,6 @@ public class Species {
 	}
 
 	public String getName() {
-		return name == null? String.format("%s [%d]", UNKNOWN, hash) : name;
+		return name == null? String.format("%s [%d] distance: %d, population: %d", UNKNOWN, id, geneticDistance, population) : String.format("%s, distance: %d, population: %d", name, geneticDistance, population);
 	}
 }
