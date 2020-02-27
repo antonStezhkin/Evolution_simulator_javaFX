@@ -32,6 +32,7 @@ public class App  extends Application {
 	private Pane fieldContainer = new Pane();
 	private Pane controls = new VBox(5);
 	private TextPanel text = new TextPanel(new Text());
+	private TextPanel stats = new TextPanel(new Text());
 
 	private void init(Stage primaryStage, int width, int height) {
 		createStage(primaryStage, width, height);
@@ -74,8 +75,10 @@ public class App  extends Application {
 			public void handle(long now) {
 				World.step();
 				showCurrentView();
+				//stats.setText(String.format("minerals: %d\nchange:%d", World.getTotalMinerals(), World.getMineralsChange()));
 			}
 		};
+		//stats.setText(String.format("minerals: %d\nchange:%d", World.getTotalMinerals(), World.getMineralsChange()));
 		Button playPause = new Button("play");
 		controls.getChildren().add(playPause);
 		controls.setTranslateX(10);
@@ -110,7 +113,7 @@ public class App  extends Application {
 			if (!isRunning) showCurrentView();
 		});
 
-		controls.getChildren().addAll(defaultViewRadio, lightViewRadio, mineralsViewRadio);
+		controls.getChildren().addAll(defaultViewRadio, lightViewRadio, mineralsViewRadio, stats);
 	}
 
 	private void showCurrentView() {

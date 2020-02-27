@@ -6,13 +6,13 @@ import world.WorldCell;
 import world.WorldObject;
 
 public class ArrayVisualization {
-	private static final double DEFAULT_VIEW_BRIGHTNESS = 1200d;
-	private static final double LIGHT_VIEW_BRIGHTNESS = 1000d;
+	private static final double DEFAULT_VIEW_BRIGHTNESS = 1500d;
+	private static final double LIGHT_VIEW_BRIGHTNESS = 1200d;
 	private static final Color WATER_COLOR = Color.web("#0095ff");
 	private static final Color LIGHT_COLOR = Color.YELLOW;
 	private static final Color CELL_COLOR_IN_LIGHT_VIEW = Color.GREEN;
 	private static final Color MINERALS_COLOR = Color.hsb(180,1, 1);
-	public static final double CELL_OPACITY_Q = 1 / 1000d;
+	public static final double CELL_OPACITY_Q = 1 / 1500d;
 
 
 	public static void paintLight(Tile[][] field){

@@ -31,7 +31,7 @@ public class DeadCell implements WorldObject {
 		this.organic = organic;
 		this.minerals = minerals;
 		maxMinerals = organic/10;
-		World.addWorldObject(x, y, this);
+		World.addWorldObject(this);
 		id = ++counter;
 	}
 
@@ -83,14 +83,13 @@ public class DeadCell implements WorldObject {
 
 	@Override
 	public void live() {
+		if (isDead || isFuckedUp){ die(); return;}
 		WorldCell c = World.getCell(x,y);
 		int outerMinerals = c.getMinerals();
 		int s = (minerals + outerMinerals) / 2;
 		int delta = minerals - s;
 		delta = (delta > MINERAL_RELEASE_MAX) ? MINERAL_RELEASE_MAX : (delta < -1 * MINERAL_RELEASE_MAX) ? -1 * MINERAL_RELEASE_MAX : delta;
 		if (minerals-delta >= maxMinerals){
-//			c.addMinerals(minerals - maxMinerals);
-//			minerals = maxMinerals;
 			delta += minerals - maxMinerals;
 			delta = (minerals-delta > maxMinerals)? 0 : (minerals-delta < 0)? minerals : delta;
 		}

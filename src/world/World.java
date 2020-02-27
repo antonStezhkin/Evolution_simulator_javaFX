@@ -17,15 +17,17 @@ public class World {
 	private static WorldCell[][] matrix;
 	private static int width, height;
 	private static Diffusion diffusion;
-	private static double diffusionSpeed = 2;
+	private static double diffusionSpeed = 3;
 	private static int invisiblePoop = 0;
+	private static int totalMinerals = 0;
+	private static int oldValue = 0;
+	private static int mineralsChange = 0;
+	private static final int MAX_CONCENTRATION = 181;
 
 
 	public static LinkedList<WorldObject> actionList = new LinkedList<>();
 	public static LinkedList<WorldObject> newObjects = new LinkedList<>();
 
-
-	int totalMinerals = 0;
 
 	static {
 		width = 110;
@@ -39,6 +41,7 @@ public class World {
 		for (int i = 0; i < defaultGenome.length; i++) {
 			defaultGenome[i] = Commands.PHOTOSYNTHESIS;
 		}
+		defaultGenome[35] = Commands.ACID;
 		Species defaultSpecies = new Species(defaultGenome);
 		defaultSpecies.setName("first");
 
@@ -50,13 +53,15 @@ public class World {
 //				organic = organic < 0 ? 0 : organic;
 //				if (organic > 0) {new LiveCell(defaultSpecies, x, y, 10, organic);}
 //				if (organic > 0) matrix[i][x].setWorldObject(new DeadCell());
-				matrix[y][x].setMinerals(120);
+				matrix[y][x].setMinerals(150);
 				}
 			}
 
 		new LiveCell(defaultSpecies, width/2, height/2, 10, 500);
 
 		calculateLight();
+		totalMinerals = width*height*150 + 10;
+		oldValue = totalMinerals;
 	}
 
 	public static WorldCell[][] getWorldMatrix() {
@@ -101,20 +106,44 @@ public class World {
 	public static void removeWorldObject(WorldObject worldObject) {
 		int x = worldObject.getX();
 		int y = worldObject.getY();
-		matrix[y][x].setWorldObject(null);
+		if(matrix[y][x].getWorldObject() != worldObject) {
+			//TODO fix this
+			boolean bastardFound = false;
+			for(int i = 0; i<height; i++){
+				if(bastardFound) break;
+				for(int j = 0; j < width; j++){
+					if(matrix[i][j].getWorldObject() == worldObject) {
+						matrix[i][j].setWorldObject(null);
+						System.out.println("found the bastard at: [" + j + "," + i + "]");
+						bastardFound = true;
+						break;
+					}
+				}
+			}
+
+		}else {
+			matrix[y][x].setWorldObject(null);
+		}
 		newObjects.remove(worldObject);
 	}
 
-	public static void addWorldObject(int x, int y, WorldObject worldObject) {
-		if(y<0 || y >= height) return;
+	public static void addWorldObject(WorldObject worldObject) {
+		int y = worldObject.getY();
+		int x = worldObject.getX();
+		if(y<0 || y >= height || !worldObject.isAlive()) return;
 		x = x < 0? width-1 : x >= width? 0 : x;
+		worldObject.setX(x);
 		matrix[y][x].setWorldObject(worldObject);
 		newObjects.add(worldObject);
 	}
 
-	public static boolean moveWorldObject(int x, int y, WorldObject worldObject) {
+	public static synchronized boolean moveWorldObject(int x, int y, WorldObject worldObject) {
 		if(y<0 || y >= height) return false;
 		x = x < 0? width-1 : x >= width? 0 : x;
+		if(matrix[y][x].getWorldObject() != null){
+			System.out.println("occupied");
+			return false;
+		}
 		matrix[worldObject.getY()][worldObject.getX()].setWorldObject(null);
 		matrix[y][x].setWorldObject(worldObject);
 		worldObject.setX(x);
@@ -142,6 +171,7 @@ public class World {
 		calculateLight();
 		diffuse();
 		recyclePoop();
+		//updateTotalMinerals();
 	}
 
 	public static WorldCell getCell(int x, int y){
@@ -151,30 +181,30 @@ public class World {
 	}
 
 	private static void recyclePoop() {
-		if (invisiblePoop >= width) {
-			int part = invisiblePoop / width;
-			int limit = width * 110;
+		if (invisiblePoop >= width*2) {
+			//int stopAt = invisiblePoop - width;
 			for (int y = height - 1; y > 1; y--) {
-				int levelLimit = limit - (12*y/10);
-				if (calculateSum(y) < levelLimit) {
-					for (int l = 0; l < part; l++) {
-						int lY = y-l;
-						if(lY < 0) lY = height-1;
-						for (int i = 0; i < width; i++) {
-							matrix[lY][i].addMinerals(1);
-						}
+				if(invisiblePoop <= 0) break;
+				int limit =  MAX_CONCENTRATION - (height - y);
+				for(int x = 0; x < width; x++){
+					if(matrix[y][x].getMinerals() < limit){
+						if(invisiblePoop > 0) {
+							invisiblePoop--;
+							matrix[y][x].addMinerals(1);
+						}else {break;}
 					}
-					break;
-
 				}
 			}
-			invisiblePoop -= part * width;
 		}
 		for (int i = 0; i < width; i++){
 			if(matrix[height-1][i].getMinerals() < 20){
 				matrix[height-1][i].addMinerals(10);
+
 			}
 		}
+//		if(bottomPump)System.out.println("bottomPump!");
+//		updateTotalMinerals();
+//		System.out.println("recycle "+mineralsChange);
 	}
 
 	public static int takePoop(int amount){
@@ -189,5 +219,27 @@ public class World {
 			sum += matrix[y][i].getMinerals();
 		}
 		return sum;
+	}
+
+	public static void updateTotalMinerals(){
+		int oldValue = totalMinerals;
+		totalMinerals = invisiblePoop;
+		for(int i = 0; i< height; i++){
+			for(int j=0; j< width; j++){
+				totalMinerals += matrix[i][j].getMinerals();
+				if(matrix[i][j].getWorldObject() != null){
+					totalMinerals += matrix[i][j].getWorldObject().getMinerals();
+					boolean good = newObjects.contains(matrix[i][j].getWorldObject());
+					if(!good) System.out.println("not good!");
+				}
+			}
+		}
+		mineralsChange += totalMinerals - oldValue;
+	}
+	public static int getTotalMinerals(){
+		return totalMinerals;
+	}
+	public static int getMineralsChange(){
+		return mineralsChange;
 	}
 }

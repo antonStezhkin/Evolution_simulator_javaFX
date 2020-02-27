@@ -33,12 +33,12 @@ public class LiveCell implements WorldObject, Commands {
 
 
 	//mineral costs
-	private static final int MAX_MINERALS = 240;
-	public static final int DIVISION_MINERALS_COST = 120;
-	private static final int BASIC_MINERALS_COST = 2;
+	private static final int MAX_MINERALS = 250;
+	public static final int DIVISION_MINERALS_COST = 100;
+	private static final int BASIC_MINERALS_COST = 1;
 	private static final int EAT_MINERALS_COST = 2;
-	private static final int MINERAL_RELEASE_MAX = 50;
-	private static final int PASSIVE_MINERAL_MAX = 27;
+	private static final int MINERAL_RELEASE_MAX = 60;
+	private static final int PASSIVE_MINERAL_MAX = 30;
 
 	public LiveCell(Species species, int x, int y, int minerals, int organic) {
 		this.species = species;
@@ -47,7 +47,7 @@ public class LiveCell implements WorldObject, Commands {
 		this.y = y;
 		this.minerals = minerals;
 		this.organic = organic;
-		World.addWorldObject(x, y, this);
+		World.addWorldObject(this);
 		species.increasePopulation();
 	}
 
@@ -71,6 +71,7 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	public void suffer() {
+		if (species.acidResistant) return;
 		if (organic < SURVIVAL_THRESHOLD) {
 			die();
 		} else if(organic < SUFFER_THRESHOLD){
@@ -95,7 +96,7 @@ public class LiveCell implements WorldObject, Commands {
 		if (organic < EAT_COST || minerals < EAT_MINERALS_COST) return;
 		organic -= EAT_COST;
 		minerals -= EAT_MINERALS_COST;
-		World.getWorldMatrix()[y][x].addMinerals(EAT_MINERALS_COST);
+		World.addPoop(EAT_MINERALS_COST);
 		consumeMinerals(food);
 		consumeOrganic(food);
 	}
@@ -104,6 +105,7 @@ public class LiveCell implements WorldObject, Commands {
 		if (organic < EAT_COST || minerals < EAT_MINERALS_COST) return STARVING;
 		organic -= EAT_COST;
 		minerals -= EAT_MINERALS_COST;
+		World.addPoop(EAT_MINERALS_COST);
 		WorldObject neighbour = getNeighbourCell();
 		if (neighbour == null) return INVALID_PARAM;
 		eat(neighbour);
@@ -145,9 +147,9 @@ public class LiveCell implements WorldObject, Commands {
 	public void die() {
 		isDead = true;
 		if (organic <= 0) {
-			WorldCell cell = World.getWorldMatrix()[y][x];
-			cell.addMinerals(minerals);
+			World.getCell(x,y).addMinerals(minerals);
 			World.removeWorldObject(this);
+			minerals = 0;
 		} else {
 			World.removeWorldObject(this);
 			new DeadCell(x, y, organic, minerals);
@@ -229,6 +231,7 @@ public class LiveCell implements WorldObject, Commands {
 				case PUMP_MINERALS :
 					pumpMinerals();
 					incrementCommandIndex(genome);
+					breakFlag = true;
 					break;
 				case DESTROY_CORPSE :
 					destroyDeadCell();
@@ -339,7 +342,7 @@ public class LiveCell implements WorldObject, Commands {
 				World.getCell(tX, tY).setMinerals(part);
 			}
 		}
-		World.getCell(x,y).addMinerals(rest);
+		getMyCell().addMinerals(rest);
 	}
 
 	private void poopToMinerals(byte[]genome) {
@@ -368,6 +371,10 @@ public class LiveCell implements WorldObject, Commands {
 		int min = (int)genome[mineralsIndex]*minerals/128;
 		if(organic - (org+DIVISION_COST) < BASIC_COST || minerals - (min+DIVISION_MINERALS_COST) < BASIC_MINERALS_COST) return STARVING;
 		if(org < BASIC_COST || min < BASIC_MINERALS_COST) return STARVING;
+
+//		World.updateTotalMinerals();
+//		System.out.println("simpleDivision "+ World.getMineralsChange());
+
 		return divide(org, min, direction);
 	}
 
@@ -543,15 +550,16 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private void createNewCell(int x, int y, int kidOrganic, int kidMinerals) {
-		organic -= DIVISION_COST;
-		minerals -= DIVISION_MINERALS_COST / 2;
+		organic -= DIVISION_COST + kidOrganic;
+		minerals -= DIVISION_MINERALS_COST + kidMinerals;
+		World.addPoop(DIVISION_MINERALS_COST);
 		int random = (int) (System.nanoTime() % (Species.MUTATION_FACTOR + 1));
-		LiveCell kid = null;
+		LiveCell kid;
 		if (random > 1) {
-			kid = new LiveCell(species, x, y, takeMinerals(kidMinerals), takeOrganic(kidOrganic));
+			kid = new LiveCell(species, x, y, kidMinerals, kidOrganic);
 		} else {
 			Species mutatedSpecies = species.mutate();
-			kid = new LiveCell(mutatedSpecies, x, y, takeMinerals(kidMinerals), takeOrganic(kidOrganic));
+			kid = new LiveCell(mutatedSpecies, x, y, kidMinerals, kidOrganic);
 		}
 		kid.setCurrentDirection(currentDirection);
 	}
@@ -599,6 +607,8 @@ public class LiveCell implements WorldObject, Commands {
 		minerals += delta;
 		outerMinerals -= delta;
 		cell.setMinerals(outerMinerals);
+//		World.updateTotalMinerals();
+//		System.out.println("passiveConsumeMinerals " + World.getMineralsChange());
 	}
 
 	private void basicMetabolism() {
@@ -653,7 +663,7 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public Color getColor() {
-		return Color.GREEN;
+		return Color.DARKGREEN;
 	}
 
 	@Override

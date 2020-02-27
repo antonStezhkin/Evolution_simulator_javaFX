@@ -8,6 +8,7 @@ public class Species {
 	private final int geneticDistance;
 	private static final String UNKNOWN = "unknown";
 	private static int idCounter = 0;
+	public final boolean acidResistant;
 	int id = 0;
 
 	public void setName(String name) {
@@ -26,6 +27,11 @@ public class Species {
 		geneticDistance = 0;
 		SpeciesTree.INSTANCE.add(this);
 		id = ++idCounter;
+		boolean r = false;
+		for(int i =0; i<genome.length; i++){
+			if(genome[i] == Commands.RESIST){ r = true; break;}
+		}
+		acidResistant = r;
 	}
 
 	private Species(byte[] genome, int geneticDistance) {
@@ -35,6 +41,11 @@ public class Species {
 		this.geneticDistance = geneticDistance;
 		SpeciesTree.INSTANCE.add(this);
 		id = ++idCounter;
+		boolean r = false;
+		for(int i =0; i<genome.length; i++){
+			if(genome[i] == Commands.RESIST){ r = true; break;}
+		}
+		acidResistant = r;
 	}
 
 	public int getHash() {

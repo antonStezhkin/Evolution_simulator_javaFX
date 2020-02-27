@@ -40,6 +40,7 @@ public interface Commands {
 	byte SLIME = 53;
 	byte RELEASE_MINERALS = 54;
 	byte DESTROY_CORPSE = 55;
+	byte RESIST = 56;
 
 
 	//Directions. To turn, move, divide, etc
