@@ -41,7 +41,7 @@ public class World {
 		for (int i = 0; i < defaultGenome.length; i++) {
 			defaultGenome[i] = Commands.PHOTOSYNTHESIS;
 		}
-		defaultGenome[35] = Commands.ACID;
+		//defaultGenome[35] = Commands.ACID;
 		Species defaultSpecies = new Species(defaultGenome);
 		defaultSpecies.setName("first");
 
@@ -53,14 +53,18 @@ public class World {
 //				organic = organic < 0 ? 0 : organic;
 //				if (organic > 0) {new LiveCell(defaultSpecies, x, y, 10, organic);}
 //				if (organic > 0) matrix[i][x].setWorldObject(new DeadCell());
-				matrix[y][x].setMinerals(150);
-				}
+				matrix[y][x].setMinerals(100);
 			}
+		}
 
-		new LiveCell(defaultSpecies, width/2, height/2, 10, 500);
+		try {
+			new LiveCell(defaultSpecies, width / 2, height / 2, 10, 500);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		calculateLight();
-		totalMinerals = width*height*150 + 10;
+		totalMinerals = width * height * 150 + 10;
 		oldValue = totalMinerals;
 	}
 
@@ -97,74 +101,72 @@ public class World {
 	}
 
 	public static WorldObject getWorldObject(int x, int y) {
-		if(y < 0) return WorldsEdge.SKY;
-		if(y >= height) return WorldsEdge.BOTTOM;
-		x = x < 0? width-1 : x >= width? 0 : x;
+		if (y < 0) return WorldsEdge.SKY;
+		if (y >= height) return WorldsEdge.BOTTOM;
+		x = x < 0 ? width - 1 : x >= width ? 0 : x;
 		return matrix[y][x].getWorldObject();
 	}
 
-	public static void removeWorldObject(WorldObject worldObject) {
-		int x = worldObject.getX();
-		int y = worldObject.getY();
-		if(matrix[y][x].getWorldObject() != worldObject) {
-			//TODO fix this
-			boolean bastardFound = false;
-			for(int i = 0; i<height; i++){
-				if(bastardFound) break;
-				for(int j = 0; j < width; j++){
-					if(matrix[i][j].getWorldObject() == worldObject) {
-						matrix[i][j].setWorldObject(null);
-						System.out.println("found the bastard at: [" + j + "," + i + "]");
-						bastardFound = true;
-						break;
-					}
-				}
-			}
+//	public static void removeWorldObject(WorldObject worldObject) throws Exception {
+//		int x = worldObject.getX();
+//		int y = worldObject.getY();
+//		if(matrix[y][x].getWorldObject() != worldObject) {
+//			//TODO fix this
+//			boolean bastardFound = false;
+//			for(int i = 0; i<height; i++){
+//				if(bastardFound) break;
+//				for(int j = 0; j < width; j++){
+//					if(matrix[i][j].getWorldObject() == worldObject) {
+//						matrix[i][j].setWorldObject(null);
+//						System.out.println("found the bastard at: [" + j + "," + i + "]");
+//						bastardFound = true;
+//						break;
+//					}
+//				}
+//			}
+//
+//		}else {
+//			matrix[y][x].setWorldObject(null);
+//		}
+//		newObjects.remove(worldObject);
+//	}
 
-		}else {
-			matrix[y][x].setWorldObject(null);
-		}
-		newObjects.remove(worldObject);
-	}
-
-	public static void addWorldObject(WorldObject worldObject) {
+	public static void addWorldObject(WorldObject worldObject) throws Exception {
 		int y = worldObject.getY();
 		int x = worldObject.getX();
-		if(y<0 || y >= height || !worldObject.isAlive()) return;
-		x = x < 0? width-1 : x >= width? 0 : x;
+		if (y < 0 || y >= height || worldObject.isDeleted()) return;
+		x = x < 0 ? width - 1 : x >= width ? 0 : x;
 		worldObject.setX(x);
 		matrix[y][x].setWorldObject(worldObject);
 		newObjects.add(worldObject);
 	}
 
-	public static synchronized boolean moveWorldObject(int x, int y, WorldObject worldObject) {
-		if(y<0 || y >= height) return false;
-		x = x < 0? width-1 : x >= width? 0 : x;
-		if(matrix[y][x].getWorldObject() != null){
+	public static synchronized boolean moveWorldObject(int x, int y, WorldObject worldObject) throws Exception {
+		if (y < 0 || y >= height) return false;
+		x = x < 0 ? width - 1 : x >= width ? 0 : x;
+		if (matrix[y][x].getWorldObject() != null) {
 			System.out.println("occupied");
 			return false;
 		}
-		matrix[worldObject.getY()][worldObject.getX()].setWorldObject(null);
-		matrix[y][x].setWorldObject(worldObject);
+		if (matrix[worldObject.getY()][worldObject.getX()].getWorldObject() != worldObject) {
+			throw new Exception("wrong object in the cell! " + matrix[worldObject.getY()][worldObject.getX()].getWorldObject());
+		}
+		matrix[y][x].setWorldObject(matrix[worldObject.getY()][worldObject.getX()].takeWorldObject());
 		worldObject.setX(x);
 		worldObject.setY(y);
 		return true;
 	}
 
 
-	public synchronized static void step() {
+	public synchronized static void step() throws Exception {
 		actionList.addAll(newObjects);
 		newObjects = new LinkedList<>();
 		WorldObject current;
 		while ((current = actionList.poll()) != null) {
-			current.live();
-			if(current instanceof DeadCell){
-				((DeadCell) current).isFuckedUp = true;
-			}
-			if (current.isAlive()) {
-				newObjects.add(current);
-				if(current instanceof DeadCell){
-					((DeadCell) current).isFuckedUp = false;
+			if (!current.isDeleted()) {
+				current.live();
+				if (!current.isDeleted()) {
+					newObjects.add(current);
 				}
 			}
 		}
@@ -174,31 +176,35 @@ public class World {
 		//updateTotalMinerals();
 	}
 
-	public static WorldCell getCell(int x, int y){
-		if(y<0 || y >= height) return null;
-		x = x < 0? width-1 : x >= width? 0 : x;
+	public static WorldCell getCell(int x, int y) {
+		if (y < 0 || y >= height) return null;
+		x = x < 0 ? width - 1 : x >= width ? 0 : x;
 		return matrix[y][x];
 	}
 
 	private static void recyclePoop() {
-		if (invisiblePoop >= width*2) {
+		int poopBufferSize = 20*width;
+		int stopAt = invisiblePoop > poopBufferSize? invisiblePoop - poopBufferSize : 0;
+		if (invisiblePoop >= width * 2) {
 			//int stopAt = invisiblePoop - width;
 			for (int y = height - 1; y > 1; y--) {
-				if(invisiblePoop <= 0) break;
-				int limit =  MAX_CONCENTRATION - (height - y);
-				for(int x = 0; x < width; x++){
-					if(matrix[y][x].getMinerals() < limit){
-						if(invisiblePoop > 0) {
+				if (invisiblePoop <= stopAt) break;
+				int limit = MAX_CONCENTRATION - (height - y);
+				for (int x = 0; x < width; x++) {
+					if (matrix[y][x].getMinerals() < limit) {
+						if (invisiblePoop > 0) {
 							invisiblePoop--;
 							matrix[y][x].addMinerals(1);
-						}else {break;}
+						} else {
+							break;
+						}
 					}
 				}
 			}
 		}
-		for (int i = 0; i < width; i++){
-			if(matrix[height-1][i].getMinerals() < 20){
-				matrix[height-1][i].addMinerals(10);
+		for (int i = 0; i < width; i++) {
+			if (matrix[height - 1][i].getMinerals() < 20) {
+				matrix[height - 1][i].addMinerals(10);
 
 			}
 		}
@@ -207,8 +213,8 @@ public class World {
 //		System.out.println("recycle "+mineralsChange);
 	}
 
-	public static int takePoop(int amount){
-		amount = invisiblePoop > amount? amount : invisiblePoop;
+	public static int takePoop(int amount) {
+		amount = invisiblePoop > amount ? amount : invisiblePoop;
 		invisiblePoop -= amount;
 		return amount;
 	}
@@ -221,25 +227,27 @@ public class World {
 		return sum;
 	}
 
-	public static void updateTotalMinerals(){
+	public static void updateTotalMinerals() {
 		int oldValue = totalMinerals;
 		totalMinerals = invisiblePoop;
-		for(int i = 0; i< height; i++){
-			for(int j=0; j< width; j++){
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
 				totalMinerals += matrix[i][j].getMinerals();
-				if(matrix[i][j].getWorldObject() != null){
+				if (matrix[i][j].getWorldObject() != null) {
 					totalMinerals += matrix[i][j].getWorldObject().getMinerals();
 					boolean good = newObjects.contains(matrix[i][j].getWorldObject());
-					if(!good) System.out.println("not good!");
+					if (!good) System.out.println("not good!");
 				}
 			}
 		}
 		mineralsChange += totalMinerals - oldValue;
 	}
-	public static int getTotalMinerals(){
+
+	public static int getTotalMinerals() {
 		return totalMinerals;
 	}
-	public static int getMineralsChange(){
+
+	public static int getMineralsChange() {
 		return mineralsChange;
 	}
 }

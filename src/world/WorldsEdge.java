@@ -54,5 +54,5 @@ public enum WorldsEdge implements WorldObject {
 	public double getOpacity() {return 0;}
 
 	@Override
-	public boolean isAlive() {return true;}
+	public boolean isDeleted() {return false;}
 }

@@ -73,7 +73,11 @@ public class App  extends Application {
 		globalTimer = new AnimationTimer() {
 			@Override
 			public void handle(long now) {
-				World.step();
+				try {
+					World.step();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 				showCurrentView();
 				//stats.setText(String.format("minerals: %d\nchange:%d", World.getTotalMinerals(), World.getMineralsChange()));
 			}

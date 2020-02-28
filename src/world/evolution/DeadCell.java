@@ -25,7 +25,7 @@ public class DeadCell implements WorldObject {
 		return isFuckedUp? "["+x+","+y+"] "+ isDead + " fuckedUp":"dead cell №" + id;
 	}
 
-	public DeadCell(int x, int y, int organic, int minerals) {
+	public DeadCell(int x, int y, int organic, int minerals) throws Exception {
 		this.x = x;
 		this.y = y;
 		this.organic = organic;
@@ -54,10 +54,6 @@ public class DeadCell implements WorldObject {
 	}
 
 	@Override
-	public void eat(WorldObject food) {
-	}
-
-	@Override
 	public int takeMinerals(int amount) {
 		int m = minerals > amount ? amount : minerals;
 		minerals -= m;
@@ -76,13 +72,13 @@ public class DeadCell implements WorldObject {
 	@Override
 	public void die() {
 		isDead = true;
-		World.removeWorldObject(this);
+		//World.removeWorldObject(this);
 		World.getCell(x,y).addMinerals(minerals);
 		minerals = 0;
 	}
 
 	@Override
-	public void live() {
+	public void live() throws Exception {
 		if (isDead || isFuckedUp){ die(); return;}
 		WorldCell c = World.getCell(x,y);
 		int outerMinerals = c.getMinerals();
@@ -132,7 +128,7 @@ public class DeadCell implements WorldObject {
 	}
 
 	@Override
-	public boolean isAlive() {
-		return !isDead;
+	public boolean isDeleted() {
+		return isDead;
 	}
 }
