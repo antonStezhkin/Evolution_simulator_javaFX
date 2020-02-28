@@ -218,10 +218,10 @@ public class LiveCell implements WorldObject, Commands {
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
-				case EAT_POOP :
-					poopToMinerals(genome);
-					incrementCommandIndex(genome);
-					break;
+//				case EAT_POOP :
+//					poopToMinerals(genome);
+//					incrementCommandIndex(genome);
+//					break;
 				case EAT_MINERALS :
 					nextGene = mineralsToOrganic(genome);
 					gotoRelativeCommandIndex(genome, nextGene);

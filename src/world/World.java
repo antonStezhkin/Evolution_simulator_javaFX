@@ -183,12 +183,13 @@ public class World {
 	}
 
 	private static void recyclePoop() {
-		int poopBufferSize = 20*width;
-		int stopAt = invisiblePoop > poopBufferSize? invisiblePoop - poopBufferSize : 0;
-		if (invisiblePoop >= width * 2) {
+//		int poopBufferSize = 5*width;
+//		int stopAt = invisiblePoop > poopBufferSize? invisiblePoop - poopBufferSize : 0;
+		//if (invisiblePoop >= poopBufferSize) {
 			//int stopAt = invisiblePoop - width;
+		while(invisiblePoop > 0){
 			for (int y = height - 1; y > 1; y--) {
-				if (invisiblePoop <= stopAt) break;
+				if (invisiblePoop <= 0) break;
 				int limit = MAX_CONCENTRATION - (height - y);
 				for (int x = 0; x < width; x++) {
 					if (matrix[y][x].getMinerals() < limit) {
@@ -201,6 +202,7 @@ public class World {
 					}
 				}
 			}
+		//}
 		}
 		for (int i = 0; i < width; i++) {
 			if (matrix[height - 1][i].getMinerals() < 20) {

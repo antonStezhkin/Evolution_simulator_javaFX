@@ -17,9 +17,6 @@ public enum WorldsEdge implements WorldObject {
 	public void consumeMinerals(WorldObject food) {}
 
 	@Override
-	public void eat(WorldObject food) {}
-
-	@Override
 	public int takeMinerals(int amount) {return 0;}
 
 	@Override
