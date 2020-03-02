@@ -8,7 +8,17 @@ public enum WorldsEdge implements WorldObject {
 	public int getOrganic() {return 0;}
 
 	@Override
-	public int getMinerals() {return this == BOTTOM? 100 : 0;}
+	public synchronized int getMinerals() {
+		if(this == BOTTOM){
+			if(World.bottomStore > 100){
+				World.bottomStore -= 100;
+				return 100;
+			}
+			World.bottomStore = 0;
+			return 0;
+		}
+		return 0;
+	}
 
 	@Override
 	public void consumeOrganic(WorldObject food) {}

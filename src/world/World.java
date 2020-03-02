@@ -19,10 +19,12 @@ public class World {
 	private static Diffusion diffusion;
 	private static double diffusionSpeed = 3;
 	private static int invisiblePoop = 0;
+	private static final int POOP_RECYCLE_MAX;
 	private static int totalMinerals = 0;
 	private static int oldValue = 0;
 	private static int mineralsChange = 0;
 	private static final int MAX_CONCENTRATION = 181;
+	public static volatile int bottomStore = width*height*50;
 
 
 	public static LinkedList<WorldObject> actionList = new LinkedList<>();
@@ -32,6 +34,7 @@ public class World {
 	static {
 		width = 110;
 		height = 90;
+		POOP_RECYCLE_MAX = width*50*5;
 		matrix = new WorldCell[height][width];
 		Random random = new Random();
 		//int totalMinerals = 20 * width * height;
@@ -107,29 +110,6 @@ public class World {
 		return matrix[y][x].getWorldObject();
 	}
 
-//	public static void removeWorldObject(WorldObject worldObject) throws Exception {
-//		int x = worldObject.getX();
-//		int y = worldObject.getY();
-//		if(matrix[y][x].getWorldObject() != worldObject) {
-//			//TODO fix this
-//			boolean bastardFound = false;
-//			for(int i = 0; i<height; i++){
-//				if(bastardFound) break;
-//				for(int j = 0; j < width; j++){
-//					if(matrix[i][j].getWorldObject() == worldObject) {
-//						matrix[i][j].setWorldObject(null);
-//						System.out.println("found the bastard at: [" + j + "," + i + "]");
-//						bastardFound = true;
-//						break;
-//					}
-//				}
-//			}
-//
-//		}else {
-//			matrix[y][x].setWorldObject(null);
-//		}
-//		newObjects.remove(worldObject);
-//	}
 
 	public static void addWorldObject(WorldObject worldObject) throws Exception {
 		int y = worldObject.getY();
@@ -183,31 +163,38 @@ public class World {
 	}
 
 	private static void recyclePoop() {
-//		int poopBufferSize = 5*width;
-//		int stopAt = invisiblePoop > poopBufferSize? invisiblePoop - poopBufferSize : 0;
-		//if (invisiblePoop >= poopBufferSize) {
-			//int stopAt = invisiblePoop - width;
+		int recycledPoop = 0;
+		//TODO optimize speed
 		while(invisiblePoop > 0){
-			for (int y = height - 1; y > 1; y--) {
+			if(recycledPoop >= POOP_RECYCLE_MAX) break;
+			for (int y = height - 1; y > 1;) {
 				if (invisiblePoop <= 0) break;
 				int limit = MAX_CONCENTRATION - (height - y);
+				int sum = 0;
+				int maxSum = limit*width;
 				for (int x = 0; x < width; x++) {
 					if (matrix[y][x].getMinerals() < limit) {
 						if (invisiblePoop > 0) {
 							invisiblePoop--;
+							recycledPoop++;
 							matrix[y][x].addMinerals(1);
+							if(recycledPoop >= POOP_RECYCLE_MAX) break;
 						} else {
 							break;
 						}
 					}
+					sum += matrix[y][x].getMinerals();
 				}
+				if(sum >= maxSum) y--;
 			}
-		//}
 		}
-		for (int i = 0; i < width; i++) {
-			if (matrix[height - 1][i].getMinerals() < 20) {
-				matrix[height - 1][i].addMinerals(10);
-
+		if(bottomStore > 0) {
+			for (int i = 0; i < width; i++) {
+				int m = matrix[height - 1][i].getMinerals();
+				if (m < 20) {
+					matrix[height - 1][i].setMinerals(20);
+					bottomStore -= 20 - m;
+				}
 			}
 		}
 //		if(bottomPump)System.out.println("bottomPump!");

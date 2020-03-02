@@ -123,9 +123,6 @@ public class ArrayVisualization {
 		int width = fieldWidth / cols;
 		int height = fieldHeight / rows;
 
-		System.out.println(fieldHeight);
-		System.out.println(height);
-
 		for(int y= 0; y < rows; y++){
 			int offsetY = y*height;
 			for(int x = 0; x < cols; x++){

@@ -34,7 +34,7 @@ public class LiveCell implements WorldObject, Commands {
 
 	//mineral costs
 	private static final int MAX_MINERALS = 250;
-	public static final int DIVISION_MINERALS_COST = 100;
+	public static final int DIVISION_MINERALS_COST = 120;
 	private static final int BASIC_MINERALS_COST = 1;
 	private static final int EAT_MINERALS_COST = 2;
 	private static final int MINERAL_RELEASE_MAX = 60;
@@ -218,10 +218,10 @@ public class LiveCell implements WorldObject, Commands {
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
-//				case EAT_POOP :
-//					poopToMinerals(genome);
-//					incrementCommandIndex(genome);
-//					break;
+				case EAT_POOP :
+					poopToMinerals(genome);
+					incrementCommandIndex(genome);
+					break;
 				case EAT_MINERALS :
 					nextGene = mineralsToOrganic(genome);
 					gotoRelativeCommandIndex(genome, nextGene);
@@ -240,6 +240,19 @@ public class LiveCell implements WorldObject, Commands {
 					acid();
 					incrementCommandIndex(genome);
 					break;
+				case SURROUNDED:
+					int next = isSurrounded()? SUCCESS : INVALID_PARAM;
+					gotoRelativeCommandIndex(genome, next);
+					break;
+				case CHECK_ENERGY:
+					gotoRelativeCommandIndex(genome, checkEnergy(genome));
+					break;
+				case CHECK_MINERALS:
+					gotoRelativeCommandIndex(genome, checkMinerals(genome));
+					break;
+				case CHECK_LIGHT:
+					gotoRelativeCommandIndex(genome, checkLight(genome));
+					break;
 				default:
 					gotoRelativeCommandIndex(genome, 0);
 					break;
@@ -253,6 +266,24 @@ public class LiveCell implements WorldObject, Commands {
 				die();
 			}
 		}
+	}
+
+	private int checkLight(byte[] genome) {
+		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
+		amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
+		return genome[amountIndex]*15 < getMyCell().getLight()? SUCCESS : INVALID_PARAM;
+	}
+
+	private int checkMinerals(byte[] genome) {
+		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
+		amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
+		return genome[amountIndex]*3 < minerals? SUCCESS : INVALID_PARAM;
+	}
+
+	private int checkEnergy(byte[] genome) {
+		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
+		amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
+		return genome[amountIndex]*15 < organic? SUCCESS : INVALID_PARAM;
 	}
 
 	private void destroyDeadCell() throws Exception {
@@ -503,7 +534,6 @@ public class LiveCell implements WorldObject, Commands {
 				return DOWN_LEFT;
 			case DOWN_LEFT:
 				return UP_RIGHT;
-
 			case LEFT:
 				return RIGHT;
 			case RIGHT:
@@ -568,7 +598,7 @@ public class LiveCell implements WorldObject, Commands {
 		if (organic > MAX_ORGANIC) return;
 		WorldCell c = getMyCell();
 		int light = (int) Math.round(0.80 * c.getLight() / (World.WATER_OPACITY - organic * World.CELL_SHADOW_Q));
-		light /= 5;
+		light /= 6;
 		double bonus = 0.4;
 		for (int i = 0; i < mates.length; i++) {
 			if (mates[i] != null) bonus += 0.5;
@@ -586,6 +616,18 @@ public class LiveCell implements WorldObject, Commands {
 
 	private void gotoRelativeCommandIndex(byte[] genome, int index) {
 		commandIndex = genome[(index + commandIndex) % Species.GENOME_SIZE];
+	}
+
+	private boolean isSurrounded(){
+		for(int i =0; i<9; i++){
+			int yc = i/3;
+			int xc = i%3;
+			if(xc == 0 && yc == 0) continue;
+			xc = x+xc-1;
+			yc = y+yc-1;
+			if(World.getWorldObject(xc, yc) == null) return false;
+		}
+		return true;
 	}
 
 	private void passiveConsumeMinerals() {
