@@ -362,7 +362,7 @@ public class LiveCell implements WorldObject, Commands {
 		int amount = genome[amountIndex];
 		if(minerals - amount < BASIC_MINERALS_COST * 2) return STARVING;
 		minerals -= amount;
-		int gain = (int)Math.round(amount*2.5);
+		int gain = (int)(amount*2.5);
 		organic += gain;
 		chemGained += gain;
 		totalGained += gain;
@@ -733,7 +733,7 @@ public class LiveCell implements WorldObject, Commands {
 	public Color getColor() {
 		if(totalGained == 0) return Color.hsb(prevHue, S, B);
 		double hue = (PREDATOR_HUE*predatorGained*2 + PLANT_HUE*photoGained + CHEM_HUE*chemGained*2)/(double)totalGained;
-		prevHue = (prevHue+hue*2)/3;
+		prevHue = (prevHue*2+hue*3)/5;
 		return Color.hsb(prevHue, S, B);
 	}
 

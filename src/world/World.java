@@ -43,7 +43,7 @@ public class World {
 		byte[] defaultGenome = new byte[Species.GENOME_SIZE];
 		Random r = new Random();
 		for (int i = 0; i < defaultGenome.length; i++) {
-			defaultGenome[i] = i%8 == 0? Commands.PHOTOSYNTHESIS : (byte)r.nextInt(Species.GENOME_SIZE);
+			defaultGenome[i] = i%5 == 0? Commands.PHOTOSYNTHESIS : (byte)r.nextInt(Species.GENOME_SIZE);
 		}
 		//defaultGenome[35] = Commands.ACID;
 		Species defaultSpecies = new Species(defaultGenome);
@@ -170,7 +170,7 @@ public class World {
 			if(recycledPoop >= POOP_RECYCLE_MAX) break;
 			for (int y = height - 1; y > 1;) {
 				if (invisiblePoop <= 0) break;
-				int limit = MAX_CONCENTRATION - (height - y);
+				int limit = MAX_CONCENTRATION - (height - y)*3;
 				int sum = 0;
 				int maxSum = limit*width;
 				for (int x = 0; x < width; x++) {
