@@ -49,6 +49,7 @@ public class LiveCell implements WorldObject, Commands {
 	private int photoGained = 1;
 	private int predatorGained;
 	private int chemGained;
+	private int releaseMinerals = 0;
 
 	public LiveCell(Species species, int x, int y, int minerals, int organic) throws Exception {
 		this.species = species;
@@ -187,6 +188,7 @@ public class LiveCell implements WorldObject, Commands {
 		boolean breakFlag = false;
 		byte[] genome = species.getGenome();
 		int nextGene;
+		releaseMinerals = 0;
 		for (int i = 0; i < MAX_COMMANDS_PER_TURN; i++) {
 			if(isDead) return;
 			switch (genome[commandIndex]) {
@@ -251,6 +253,8 @@ public class LiveCell implements WorldObject, Commands {
 					incrementCommandIndex(genome);
 					breakFlag = true;
 					break;
+
+				//Special
 				case DESTROY_CORPSE :
 					destroyDeadCell();
 					incrementCommandIndex(genome);
@@ -259,6 +263,14 @@ public class LiveCell implements WorldObject, Commands {
 					acid();
 					incrementCommandIndex(genome);
 					break;
+				case RELEASE_MINERALS:
+					int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
+					amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
+					releaseMinerals += genome[amountIndex];
+					incrementCommandIndex(genome);
+					break;
+
+				//Sensors
 				case SURROUNDED:
 					int next = isSurrounded()? SUCCESS : INVALID_PARAM;
 					gotoRelativeCommandIndex(genome, next);
@@ -272,6 +284,9 @@ public class LiveCell implements WorldObject, Commands {
 				case CHECK_LIGHT:
 					gotoRelativeCommandIndex(genome, checkLight(genome));
 					break;
+				case CHECK_RELATION:
+					gotoRelativeCommandIndex(genome, checkRelation());
+					break;
 				default:
 					gotoRelativeCommandIndex(genome, 0);
 					break;
@@ -279,6 +294,10 @@ public class LiveCell implements WorldObject, Commands {
 			if (breakFlag) break;
 		}
 		passiveConsumeMinerals();
+		if(releaseMinerals > 0){
+			releaseMinerals = takeMinerals(releaseMinerals);
+			getMyCell().addMinerals(releaseMinerals);
+		}
 		passiveFloat();
 		if (organic >= MAX_ORGANIC && minerals >= DIVISION_MINERALS_COST) {
 			if(divide() == ALIEN){
@@ -506,6 +525,16 @@ public class LiveCell implements WorldObject, Commands {
 		return SUCCESS;
 	}
 
+	private int checkRelation(){
+		return checkRelation(currentDirection);
+	}
+	private int checkRelation(int direction) {
+		int dX = direction%3 - 1;
+		int dY = direction/3 - 1;
+		WorldObject worldObject = World.getWorldObject(x+dX, y+dY);
+		if(worldObject == null || !(worldObject instanceof LiveCell)) return INVALID_PARAM;
+		else return checkRelation((LiveCell)worldObject);
+	}
 	private int checkRelation(LiveCell other) {
 		if (other == null) return INVALID_PARAM;
 		if (other.genomeHash == genomeHash) return CLONE;

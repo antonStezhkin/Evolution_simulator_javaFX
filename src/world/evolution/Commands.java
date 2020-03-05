@@ -12,12 +12,14 @@ public interface Commands {
 	byte DIVIDE = 16; // - make a free and equal clone; The child cell gets minerals/2 minerals and energy/2 energy. parent cell gets minerals - minerals/2 minerals and energy - energy/2 energy;
 	byte SPAWN = 22; // - spawn a kid with genetically determined amount of resources.
 	byte GROW = 24; // - spawn an attached colony cell. thus growing into a colony.
+	byte NO_DIVISION = 25;// - no division on this turn even if enough organic and minerals
 
 	//SENSORS
 	byte SURROUNDED = 46; //- do something if bot is surrounded
 	byte CHECK_ENERGY = 47; //- checks energy level; The next byt*15 determines the threshold. +2 if below threshold, +3 if above or = threshold;
 	byte CHECK_LIGHT = 48; //- Check light in the tile where the cell is.
 	byte CHECK_MINERALS = 40; //- like check energy, but with minerals;
+	byte CHECK_RELATION = 45;
 	byte LOOK_AROUND = 49; //- look around. Act when 1st not empty cell found or all cells are empty.
 
 	//MOTION
@@ -35,11 +37,10 @@ public interface Commands {
 
 	//EXTRA
 	byte ACID = 50;
-	byte REMOVE_CORPSE = 51;
+	byte DESTROY_CORPSE = 51;
 	byte POISON = 52;
 	byte SLIME = 53;
 	byte RELEASE_MINERALS = 54;
-	byte DESTROY_CORPSE = 55;
 	byte RESIST = 56;
 
 

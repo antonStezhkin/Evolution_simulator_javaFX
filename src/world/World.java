@@ -43,7 +43,7 @@ public class World {
 		byte[] defaultGenome = new byte[Species.GENOME_SIZE];
 		Random r = new Random();
 		for (int i = 0; i < defaultGenome.length; i++) {
-			defaultGenome[i] = i%5 == 0? Commands.PHOTOSYNTHESIS : (byte)r.nextInt(Species.GENOME_SIZE);
+			defaultGenome[i] = i%8 == 0? (byte)r.nextInt(Species.GENOME_SIZE) :  Commands.PHOTOSYNTHESIS;
 		}
 		//defaultGenome[35] = Commands.ACID;
 		Species defaultSpecies = new Species(defaultGenome);
@@ -62,7 +62,7 @@ public class World {
 		}
 
 		try {
-			new LiveCell(defaultSpecies, width / 2, height / 2, 10, 500);
+			new LiveCell(defaultSpecies, width / 2, height - 1, 10, 500);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
