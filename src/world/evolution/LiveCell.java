@@ -20,6 +20,12 @@ public class LiveCell implements WorldObject, Commands {
 
 	//max commands per turn
 	private static final int MAX_COMMANDS_PER_TURN = 15;
+	private static final int PREDATOR_HUE = 47;
+	private static final int PLANT_HUE = 140;
+	private static final int CHEM_HUE = 280;
+	private static final double S = 1;
+	private static final double B = 0.4;
+	private double prevHue = PLANT_HUE;
 
 	//organic costs
 	private static final int MAX_ORGANIC = 1000;
@@ -39,6 +45,10 @@ public class LiveCell implements WorldObject, Commands {
 	private static final int EAT_MINERALS_COST = 2;
 	private static final int MINERAL_RELEASE_MAX = 60;
 	private static final int PASSIVE_MINERAL_MAX = 30;
+	private int totalGained = 1;
+	private int photoGained = 1;
+	private int predatorGained;
+	private int chemGained;
 
 	public LiveCell(Species species, int x, int y, int minerals, int organic) throws Exception {
 		this.species = species;
@@ -64,7 +74,10 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public void consumeOrganic(WorldObject food) throws Exception {
-		organic += food.takeOrganic(MAX_ORGANIC - organic);
+		int gain = food.takeOrganic(MAX_ORGANIC - organic);
+		organic += gain;
+		totalGained += gain;
+		predatorGained += gain;
 		if (food instanceof LiveCell) {
 			((LiveCell) food).suffer();
 		}
@@ -164,6 +177,12 @@ public class LiveCell implements WorldObject, Commands {
 			return;
 		}
 		basicMetabolism();
+
+		totalGained = 0;
+		photoGained = 0;
+		chemGained = 0;
+		predatorGained = 0;
+
 
 		boolean breakFlag = false;
 		byte[] genome = species.getGenome();
@@ -343,7 +362,10 @@ public class LiveCell implements WorldObject, Commands {
 		int amount = genome[amountIndex];
 		if(minerals - amount < BASIC_MINERALS_COST * 2) return STARVING;
 		minerals -= amount;
-		organic += amount*3;
+		int gain = (int)Math.round(amount*2.5);
+		organic += gain;
+		chemGained += gain;
+		totalGained += gain;
 		World.addPoop(amount);
 		return SUCCESS;
 	}
@@ -604,7 +626,11 @@ public class LiveCell implements WorldObject, Commands {
 			if (mates[i] != null) bonus += 0.5;
 		}
 		bonus += minerals / 1500.0;
-		organic += light * bonus;
+		int gain = 0;
+		gain += light*bonus;
+		organic += gain;
+		totalGained += gain;
+		photoGained += gain;
 	}
 
 	private void incrementCommandIndex(byte[] genome) {
@@ -705,7 +731,10 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public Color getColor() {
-		return Color.DARKGREEN;
+		if(totalGained == 0) return Color.hsb(prevHue, S, B);
+		double hue = (PREDATOR_HUE*predatorGained*2 + PLANT_HUE*photoGained + CHEM_HUE*chemGained*2)/(double)totalGained;
+		prevHue = (prevHue+hue*2)/3;
+		return Color.hsb(prevHue, S, B);
 	}
 
 	@Override
