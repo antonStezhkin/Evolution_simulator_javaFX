@@ -35,7 +35,7 @@ public class Tile extends StackPane {
 		Tile.fullGeometry = emptyGeometry;
 	}
 
-	public void draw(){
+	public synchronized void draw(){
 		WorldObject wo = worldCell.getWorldObject();
 		if(wo == null){
 			object.setVisible(false);
