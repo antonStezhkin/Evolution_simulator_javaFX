@@ -131,4 +131,9 @@ public class DeadCell implements WorldObject {
 	public boolean isDeleted() {
 		return isDead;
 	}
+
+	@Override
+	public int getColonyStatus() {
+		return 0;
+	}
 }

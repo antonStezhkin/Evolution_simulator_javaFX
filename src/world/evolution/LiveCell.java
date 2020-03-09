@@ -777,6 +777,11 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	@Override
+	public int getColonyStatus() {
+		return (int)colonyStatus;
+	}
+
+	@Override
 	public String toString() {
 		return species.getName();
 	}

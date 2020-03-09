@@ -16,62 +16,81 @@ public class ArrayVisualization {
 
 
 	public static void paintLight(Tile[][] field){
-		final int cols = field[0].length;
-		final int rows = field.length;
+		final int cols = World.getWidth();
+		final int rows = World.getHeight();
+
+		Tile.setEmptyGeometry(Tile.Geometry.NO_BORDER);
+		Tile.setFullGeometry(Tile.Geometry.BORDER);
+
 		for(int y= 0; y < rows; y++){
 			for(int x = 0; x < cols; x++){
 				Tile tile = field[y][x];
 				WorldCell content = tile.getWorldCell();
 				WorldObject worldObject = content.getWorldObject();
+				tile.setBorderColor(Color.YELLOWGREEN);
+				tile.setObjectBorderColor(Color.YELLOWGREEN);
 				double brightnessFactor = content.getLight() / LIGHT_VIEW_BRIGHTNESS;
 				Color light = LIGHT_COLOR.deriveColor(0d, 1d, brightnessFactor, 1d);
+				tile.setWaterColor(light);
 				if (worldObject != null) {
 					double opacity = (double) worldObject.getOrganic() * CELL_OPACITY_Q;
 					Color worldObjectColor = overlayColors(CELL_COLOR_IN_LIGHT_VIEW .deriveColor(0d, 1d, 1d, opacity), light);
-					tile.setFill(worldObjectColor);
-					tile.setBorder(1, Color.YELLOWGREEN);
-				}else{
-					tile.setBorder(0);
-					tile.setFill(light);
+					tile.setObjectColor(worldObjectColor);
 				}
-			}
+				tile.draw();
 		}
+
+
+	}
 	}
 
 	public static void paintDefault(Tile[][] field){
-		final int cols = field[0].length;
-		final int rows = field.length;
+		final int cols = World.getWidth();
+		final int rows = World.getHeight();
 
-		for(int y= 0; y < rows; y++){
-			for(int x = 0; x < cols; x++){
+		Tile.setEmptyGeometry(Tile.Geometry.NO_BORDER);
+		Tile.setFullGeometry(Tile.Geometry.BORDER);
+
+		for(int y = 0; y < rows; y++){
+			for(int x = 0; x <cols; x++){
 				Tile tile = field[y][x];
+
+				tile.setBorderColor(Color.SILVER);
+				tile.setObjectBorderColor(Color.SILVER);
+
 				WorldCell content = tile.getWorldCell();
 				WorldObject worldObject = content.getWorldObject();
+				double brightnessFactor = content.getLight() / DEFAULT_VIEW_BRIGHTNESS;
+				Color light = WATER_COLOR.deriveColor(0, 1d, brightnessFactor, 1d);
+				tile.setWaterColor(light);
 				if(worldObject != null){
 					Color objectBasicColor = worldObject.getColor();
 					double opacity = (double) worldObject.getOrganic() * CELL_OPACITY_Q;
 					Color fillColor = objectBasicColor.deriveColor(0d, opacity, 1.5 - (opacity * 0.5), 1d);
-					tile.setBorder(0.5, Color.SILVER);
-					tile.setFill(fillColor);
-				}else{
-					double brightnessFactor = content.getLight() / DEFAULT_VIEW_BRIGHTNESS;
-					Color light = WATER_COLOR.deriveColor(0, 1d, brightnessFactor, 1d);
-					tile.setFill(light);
-					tile.setBorder(0);
+					tile.setObjectColor(fillColor);
 				}
+				tile.draw();
 			}
 		}
 	}
 
 	public static void paintMinerals(Tile[][] field){
-		final int cols = field[0].length;
-		final int rows = field.length;
-		for(int y= 0; y < rows; y++){
-			for(int x = 0; x < cols; x++){
+		final int cols = World.getWidth();
+		final int rows = World.getHeight();
+
+		Tile.setEmptyGeometry(Tile.Geometry.NO_BORDER);
+		Tile.setFullGeometry(Tile.Geometry.OBJECT_WATER_BORDER);
+
+		for(int y = 0; y < rows; y++){
+			for(int x = 0; x <cols; x++){
 				Tile tile = field[y][x];
 				WorldCell content = tile.getWorldCell();
+				tile.setBorderColor(Color.SILVER);
+				tile.setObjectBorderColor(Color.SILVER);
+
 				WorldObject worldObject = content.getWorldObject();
 				int minerals = content.getMinerals();
+
 				Color fill = Color.WHITE;
 				if(minerals > 0) {
 					double hueShift = minerals - 40;
@@ -85,18 +104,12 @@ public class ArrayVisualization {
 						saturation =  0.025*minerals;
 					}
 					fill = MINERALS_COLOR.deriveColor(hueShift, saturation, brightness, 1);
-					//fill = overlayColors(fill, Color.WHITE);
 				}
-				if(worldObject == null){
-//                    tile.setBorder(0);
-					if(minerals > 0){tile.setBorder(0); tile.setBorder(0.5, Color.WHITE);}
-					else{tile.setBorder(0.5, Color.SILVER);}
-					tile.setFill(fill);
-				}else{
-					tile.setBorder(2, fill);
+				tile.setWaterColor(fill);
+				if(worldObject != null){
 					int cellMinerals = worldObject.getMinerals();
 					if(cellMinerals == 0){
-						tile.setFill(Color.WHITE);
+						tile.setObjectColor(Color.WHITE);
 					}else{
 						double hueShift = worldObject.getMinerals() - 40;
 						double brightness = 1;
@@ -108,30 +121,10 @@ public class ArrayVisualization {
 							hueShift = 0;
 							saturation =  0.025*worldObject.getMinerals();
 						}
-						Color fill1 = MINERALS_COLOR.deriveColor(hueShift, saturation, brightness, 1);
-						tile.setFill(fill1);
+						tile.setObjectColor(MINERALS_COLOR.deriveColor(hueShift, saturation, brightness, 1));
 					}
-
 				}
-			}
-		}
-	}
-
-	public static void setInitialDimensions(Tile[][] field, int fieldWidth, int fieldHeight){
-		int cols = field[0].length;
-		int rows = field.length;
-		int width = fieldWidth / cols;
-		int height = fieldHeight / rows;
-
-		for(int y= 0; y < rows; y++){
-			int offsetY = y*height;
-			for(int x = 0; x < cols; x++){
-				int offsetX = x*width;
-				Tile cell = field[y][x];
-				cell.setHeight(height);
-				cell.setWidth(width);
-				cell.setX(offsetX);
-				cell.setY(offsetY);
+				tile.draw();
 			}
 		}
 	}

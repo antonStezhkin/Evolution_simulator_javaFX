@@ -62,4 +62,9 @@ public enum WorldsEdge implements WorldObject {
 
 	@Override
 	public boolean isDeleted() {return false;}
+
+	@Override
+	public int getColonyStatus() {
+		return 0;
+	}
 }

@@ -7,7 +7,6 @@ public interface WorldObject {
 	int getMinerals();
 	void consumeOrganic(WorldObject food) throws Exception;
 	void consumeMinerals(WorldObject food);
-	//void eat(WorldObject food) throws Exception;
 	int takeMinerals(int amount);
 	int takeOrganic(int amount) throws Exception;
 	void die() throws Exception;
@@ -19,4 +18,5 @@ public interface WorldObject {
 	Color getColor();
 	double getOpacity();
 	boolean isDeleted();
+	int getColonyStatus();
 }

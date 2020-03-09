@@ -44,7 +44,8 @@ public class App  extends Application {
 		field = new Tile[World.getHeight()][World.getWidth()];
 		for (int y = 0; y < World.getHeight(); y++) {
 			for (int x = 0; x < World.getWidth(); x++) {
-				Tile cell = new Tile(World.getWorldMatrix()[y][x], x, y);
+				Tile cell = Tile.newTile(x,y);
+
 				field[y][x] = cell;
 				fieldContainer.getChildren().add(cell);
 				cell.setOnMouseEntered(event -> {
@@ -63,7 +64,7 @@ public class App  extends Application {
 		}
 		fieldContainer.getChildren().add(text);
 		text.setVisible(false);
-		ArrayVisualization.setInitialDimensions(field, (int) fieldContainer.getPrefWidth(), (int) fieldContainer.getPrefHeight());
+//		ArrayVisualization.setInitialDimensions(field, (int) fieldContainer.getPrefWidth(), (int) fieldContainer.getPrefHeight());
 		ArrayVisualization.paintDefault(field);
 		currentDisplay = Display.DEFAULT;
 
@@ -154,6 +155,7 @@ public class App  extends Application {
 		fieldContainer.setId("field-container");
 		fieldContainer.setPrefWidth(width);
 		fieldContainer.setPrefHeight(height);
+		Tile.setWidthAndHeight(width/World.getWidth());
 		root.add(fieldContainer, 1, 0);
 		root.add(leftColumn, 0, 0);
 
