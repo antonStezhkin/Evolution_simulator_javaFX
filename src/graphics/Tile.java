@@ -91,8 +91,13 @@ public class Tile extends StackPane {
 						colonyTop.setVisible(false);
 						object.setVisible(false);
 					}else{
+						borderLeft.setVisible(false);
+						borderRight.setVisible(false);
+						borderBottom.setVisible(false);
+						borderTop.setVisible(true);
 						water.setFill(waterColor);
 						object.setFill(objectColor);
+						object.setStroke(objectColor);
 						object.setVisible(true);
 						showBinds(colonyStatus);
 					}
@@ -170,12 +175,9 @@ public class Tile extends StackPane {
 		final int right = 2;
 		final int bottom = 4;
 		final int left = 8;
-		int z = Integer.parseInt("1001", 2);
+		int z = 302;
 
 		System.out.println((top & z) > 0);
-		System.out.println((right & z) > 0);
-		System.out.println((bottom & z) > 0);
-		System.out.println((left & z) > 0);
 	}
 
 	private Tile (int fieldX, int fieldY){

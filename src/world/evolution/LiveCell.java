@@ -89,7 +89,7 @@ public class LiveCell implements WorldObject, Commands {
 		if (species.acidResistant) return;
 		if (organic < SURVIVAL_THRESHOLD) {
 			die();
-		} else if(organic < SUFFER_THRESHOLD){
+		} else if (organic < SUFFER_THRESHOLD) {
 			organic -= organic / 4;
 			WorldCell c = World.getWorldMatrix()[y][x];
 			int outerMinerals = c.getMinerals();
@@ -161,7 +161,7 @@ public class LiveCell implements WorldObject, Commands {
 	public void die() throws Exception {
 		isDead = true;
 		if (organic <= 0) {
-			World.getCell(x,y).addMinerals(minerals);
+			World.getCell(x, y).addMinerals(minerals);
 			//World.removeWorldObject(this);
 			minerals = 0;
 		} else {
@@ -173,7 +173,7 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public void live() throws Exception {
-		if(isDead) return;
+		if (isDead) return;
 		//check if the cell has starved to death;
 		if (organic < BASIC_COST || minerals < BASIC_COST) {
 			die();
@@ -206,6 +206,25 @@ public class LiveCell implements WorldObject, Commands {
 						gotoRelativeCommandIndex(genome, 1);
 					}
 					break;
+				case TAXIS:
+					nextGene = taxis(genome);
+					gotoRelativeCommandIndex(genome, nextGene);
+					breakFlag = true;
+					break;
+				case EAT_POOP:
+					poopToMinerals(genome);
+					incrementCommandIndex(genome);
+					break;
+				case EAT_MINERALS:
+					nextGene = mineralsToOrganic(genome);
+					gotoRelativeCommandIndex(genome, nextGene);
+					breakFlag = true;
+					break;
+				case PUMP_MINERALS:
+					pumpMinerals();
+					incrementCommandIndex(genome);
+					breakFlag = true;
+					break;
 				case SINK:
 					if (gas <= -2) {
 						gotoRelativeCommandIndex(genome, 2);
@@ -219,61 +238,46 @@ public class LiveCell implements WorldObject, Commands {
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
-				case TAXIS:
-					nextGene = taxis(genome);
-					gotoRelativeCommandIndex(genome, nextGene);
-					breakFlag = true;
-					break;
-			case EAT_POOP :
-					poopToMinerals(genome);
-					incrementCommandIndex(genome);
-					break;
-				case EAT_MINERALS :
-					nextGene = mineralsToOrganic(genome);
-					gotoRelativeCommandIndex(genome, nextGene);
-					breakFlag = true;
-					break;
-				case PUMP_MINERALS :
-					pumpMinerals();
-					incrementCommandIndex(genome);
-					breakFlag = true;
-					break;
 
 				//Reproduction
-				case SPAWN :
+				case SPAWN:
 					nextGene = simpleDivision(genome);
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
-				case DIVIDE :
+				case DIVIDE:
 					nextGene = divide();
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
-				case NO_DIVISION :
+				case NO_DIVISION:
 					divide = false;
 					incrementCommandIndex(genome);
 					break;
+				case GROW:
+					nextGene = growColony(genome);
+					gotoRelativeCommandIndex(genome, nextGene);
+					break;
 
 				//Special
-				case DESTROY_CORPSE :
+				case DESTROY_CORPSE:
 					destroyDeadCell();
 					incrementCommandIndex(genome);
 					break;
-				case ACID :
+				case ACID:
 					acid();
 					incrementCommandIndex(genome);
 					break;
 				case RELEASE_MINERALS:
-					int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
-					amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
+					int amountIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+					amountIndex = amountIndex < 0 ? Species.GENOME_SIZE + amountIndex : amountIndex;
 					releaseMinerals += genome[amountIndex];
 					incrementCommandIndex(genome);
 					break;
 
 				//Sensors
 				case SURROUNDED:
-					int next = isSurrounded()? SUCCESS : INVALID_PARAM;
+					int next = isSurrounded() ? SUCCESS : INVALID_PARAM;
 					gotoRelativeCommandIndex(genome, next);
 					break;
 				case CHECK_ENERGY:
@@ -295,48 +299,52 @@ public class LiveCell implements WorldObject, Commands {
 			if (breakFlag) break;
 		}
 		passiveConsumeMinerals();
-		if(releaseMinerals > 0){
+		if (releaseMinerals > 0) {
 			releaseMinerals = takeMinerals(releaseMinerals);
 			getMyCell().addMinerals(releaseMinerals);
 		}
 		passiveFloat();
 		if (organic >= MAX_ORGANIC && minerals >= DIVISION_MINERALS_COST && divide) {
-			if(divide() == ALIEN){
+			if (colonyStatus != 0) {
+				if (!passiveGrow()) {
+					if (divide() == ALIEN) die();
+				}
+			} else if (divide() == ALIEN) {
 				die();
 			}
 		}
 	}
 
 	private int checkLight(byte[] genome) {
-		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
-		amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
-		return genome[amountIndex]*15 < getMyCell().getLight()? SUCCESS : INVALID_PARAM;
+		int amountIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+		amountIndex = amountIndex < 0 ? Species.GENOME_SIZE + amountIndex : amountIndex;
+		return genome[amountIndex] * 15 < getMyCell().getLight() ? SUCCESS : INVALID_PARAM;
 	}
 
 	private int checkMinerals(byte[] genome) {
-		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
-		amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
-		return genome[amountIndex]*3 < minerals? SUCCESS : INVALID_PARAM;
+		int amountIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+		amountIndex = amountIndex < 0 ? Species.GENOME_SIZE + amountIndex : amountIndex;
+		return genome[amountIndex] * 3 < minerals ? SUCCESS : INVALID_PARAM;
 	}
 
 	private int checkEnergy(byte[] genome) {
-		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
-		amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
-		return genome[amountIndex]*15 < organic? SUCCESS : INVALID_PARAM;
+		int amountIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+		amountIndex = amountIndex < 0 ? Species.GENOME_SIZE + amountIndex : amountIndex;
+		return genome[amountIndex] * 15 < organic ? SUCCESS : INVALID_PARAM;
 	}
 
 	private void destroyDeadCell() throws Exception {
-		if(organic < BASIC_COST*5) return;
-		for(int i = -1; i<2; i++){
-			int tY = y+i;
-			if(tY < 0 || tY >= World.getHeight()) continue;
-			for(int j=-1; j<2; j++){
-				if(i == 0 && j == 0) continue;
-				int tX = j+x;
-				tX = tX<0? World.getWidth()-1 : tX >= World.getWidth()? 0 : tX;
-				WorldObject worldObject = World.getWorldObject(tX,tY);
-				if(worldObject != null){
-					if(worldObject instanceof DeadCell){
+		if (organic < BASIC_COST * 5) return;
+		for (int i = -1; i < 2; i++) {
+			int tY = y + i;
+			if (tY < 0 || tY >= World.getHeight()) continue;
+			for (int j = -1; j < 2; j++) {
+				if (i == 0 && j == 0) continue;
+				int tX = j + x;
+				tX = tX < 0 ? World.getWidth() - 1 : tX >= World.getWidth() ? 0 : tX;
+				WorldObject worldObject = World.getWorldObject(tX, tY);
+				if (worldObject != null) {
+					if (worldObject instanceof DeadCell) {
 						worldObject.die();
 						organic -= 30;
 						return;
@@ -346,27 +354,27 @@ public class LiveCell implements WorldObject, Commands {
 		}
 	}
 
-	public boolean isAcidResistant(){
+	public boolean isAcidResistant() {
 		return species.acidResistant;
 	}
 
 	private void acid() throws Exception {
-		int nearbyTiles = (y-1 < 0 || y+1 >= World.getHeight())? 6 : 8;
-		if(organic < (BASIC_COST*2)+(nearbyTiles*10)) return;
-		organic -= nearbyTiles*10;
-		for(int i = -1; i<2; i++){
-			int tY = y+i;
-			if(tY < 0 || tY >= World.getHeight()) continue;
-			for(int j=-1; j<2; j++){
-				if(i == 0 && j == 0) continue;
-				int tX = j+x;
-				tX = tX<0? World.getWidth()-1 : tX >= World.getWidth()? 0 : tX;
-				WorldObject worldObject = World.getWorldObject(tX,tY);
-				if(worldObject != null){
-					if(worldObject instanceof DeadCell){
+		int nearbyTiles = (y - 1 < 0 || y + 1 >= World.getHeight()) ? 6 : 8;
+		if (organic < (BASIC_COST * 2) + (nearbyTiles * 10)) return;
+		organic -= nearbyTiles * 10;
+		for (int i = -1; i < 2; i++) {
+			int tY = y + i;
+			if (tY < 0 || tY >= World.getHeight()) continue;
+			for (int j = -1; j < 2; j++) {
+				if (i == 0 && j == 0) continue;
+				int tX = j + x;
+				tX = tX < 0 ? World.getWidth() - 1 : tX >= World.getWidth() ? 0 : tX;
+				WorldObject worldObject = World.getWorldObject(tX, tY);
+				if (worldObject != null) {
+					if (worldObject instanceof DeadCell) {
 						worldObject.takeOrganic(150);
-					}else if(worldObject instanceof LiveCell) {
-						if(!((LiveCell) worldObject).isAcidResistant() && !isMate(worldObject)) {
+					} else if (worldObject instanceof LiveCell) {
+						if (!((LiveCell) worldObject).isAcidResistant() && !isMate(worldObject)) {
 							worldObject.takeOrganic(5);
 							((LiveCell) worldObject).suffer();
 						}
@@ -376,22 +384,22 @@ public class LiveCell implements WorldObject, Commands {
 		}
 	}
 
-	private boolean isMate(WorldObject worldObject){
-		if(worldObject == null || !(worldObject instanceof LiveCell) || colonyStatus == 0) return false;
-		for(int i=0; i<mates.length; i++){
-			if(mates[i] == worldObject) return true;
+	private boolean isMate(WorldObject worldObject) {
+		if (worldObject == null || !(worldObject instanceof LiveCell) || colonyStatus == 0) return false;
+		for (int i = 0; i < mates.length; i++) {
+			if (mates[i] == worldObject) return true;
 		}
 		return false;
 	}
 
-	private int mineralsToOrganic(byte[]genome) {
-		if(organic >= MAX_ORGANIC) return SUCCESS;
-		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
-		amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
+	private int mineralsToOrganic(byte[] genome) {
+		if (organic >= MAX_ORGANIC) return SUCCESS;
+		int amountIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+		amountIndex = amountIndex < 0 ? Species.GENOME_SIZE + amountIndex : amountIndex;
 		int amount = genome[amountIndex];
-		if(minerals - amount < BASIC_MINERALS_COST * 2) return STARVING;
+		if (minerals - amount < BASIC_MINERALS_COST * 2) return STARVING;
 		minerals -= amount;
-		int gain = (int)(amount*2.5);
+		int gain = (int) (amount * 2.5);
 		organic += gain;
 		chemGained += gain;
 		totalGained += gain;
@@ -399,113 +407,118 @@ public class LiveCell implements WorldObject, Commands {
 		return SUCCESS;
 	}
 
-	private void pumpMinerals(){
-		if(organic < BASIC_COST*2+100 || minerals >= MAX_MINERALS) return;
-		int nearbyTiles = (y-1 < 0 || y+1 >= World.getHeight())? 6 : 9;
+	private void pumpMinerals() {
+		if (organic < BASIC_COST * 2 + 100 || minerals >= MAX_MINERALS) return;
+		int nearbyTiles = (y - 1 < 0 || y + 1 >= World.getHeight()) ? 6 : 9;
 		int totalMinerals = 0;
-		for(int i = -1; i<2; i++){
-			int tY = y+i;
-			if(tY < 0 || tY >= World.getHeight()) continue;
-			for(int j=-1; j<2; j++){
-				int tX = j+x;
-				tX = tX<0? World.getWidth()-1 : tX >= World.getWidth()? 0 : tX;
+		for (int i = -1; i < 2; i++) {
+			int tY = y + i;
+			if (tY < 0 || tY >= World.getHeight()) continue;
+			for (int j = -1; j < 2; j++) {
+				int tX = j + x;
+				tX = tX < 0 ? World.getWidth() - 1 : tX >= World.getWidth() ? 0 : tX;
 				totalMinerals += World.getCell(tX, tY).getMinerals();
 			}
 		}
-		int mineralsAmount = totalMinerals < 100? totalMinerals : 100;
+		int mineralsAmount = totalMinerals < 100 ? totalMinerals : 100;
 		organic -= mineralsAmount;
 		totalMinerals -= mineralsAmount;
 		minerals += mineralsAmount;
 		int part = totalMinerals / nearbyTiles;
 		int rest = totalMinerals % nearbyTiles;
-		if(part*nearbyTiles + rest != totalMinerals) System.out.println("FUCK!");
-		for(int i = -1; i<2; i++){
-			int tY = y+i;
-			if(tY < 0 || tY >= World.getHeight()) continue;
-			for(int j=-1; j<2; j++){
-				int tX = j+x;
-				tX = tX<0? World.getWidth()-1 : tX >= World.getWidth()? 0 : tX;
+		if (part * nearbyTiles + rest != totalMinerals) System.out.println("FUCK!");
+		for (int i = -1; i < 2; i++) {
+			int tY = y + i;
+			if (tY < 0 || tY >= World.getHeight()) continue;
+			for (int j = -1; j < 2; j++) {
+				int tX = j + x;
+				tX = tX < 0 ? World.getWidth() - 1 : tX >= World.getWidth() ? 0 : tX;
 				World.getCell(tX, tY).setMinerals(part);
 			}
 		}
 		getMyCell().addMinerals(rest);
 	}
 
-	private void poopToMinerals(byte[]genome) {
-		if(minerals > MAX_MINERALS) return;
-		int amountIndex = (commandIndex - 1)%Species.GENOME_SIZE;
-		amountIndex = amountIndex < 0? Species.GENOME_SIZE + amountIndex : amountIndex;
-		int amount = genome[amountIndex]*2;
+	private void poopToMinerals(byte[] genome) {
+		if (minerals > MAX_MINERALS) return;
+		int amountIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+		amountIndex = amountIndex < 0 ? Species.GENOME_SIZE + amountIndex : amountIndex;
+		int amount = genome[amountIndex] * 2;
 		amount = World.takePoop(amount);
 		organic -= amount;
 		minerals += amount;
 	}
 
+
 	private int simpleDivision(byte[] genome) throws Exception {
 		int directionIndex = (commandIndex - 1) % Species.GENOME_SIZE;
 		int mineralsIndex = (commandIndex - 2) % Species.GENOME_SIZE;
-		int organicIndex =  (commandIndex - 3) % Species.GENOME_SIZE;
+		int organicIndex = (commandIndex - 3) % Species.GENOME_SIZE;
 
-		directionIndex = directionIndex < 0? Species.GENOME_SIZE + directionIndex : directionIndex;
-		mineralsIndex = mineralsIndex < 0? Species.GENOME_SIZE + mineralsIndex : mineralsIndex;
-		organicIndex = organicIndex < 0? Species.GENOME_SIZE  + organicIndex : organicIndex;
+		directionIndex = directionIndex < 0 ? Species.GENOME_SIZE + directionIndex : directionIndex;
+		mineralsIndex = mineralsIndex < 0 ? Species.GENOME_SIZE + mineralsIndex : mineralsIndex;
+		organicIndex = organicIndex < 0 ? Species.GENOME_SIZE + organicIndex : organicIndex;
 
-		int direction = (int)genome[directionIndex]%9;
-		if(direction == 4) return INVALID_PARAM;
-		if(organic < DIVISION_COST+BASIC_COST*6 || minerals < DIVISION_MINERALS_COST+BASIC_MINERALS_COST*6) return  STARVING;
-		int org = (int)genome[organicIndex]*organic/128;
-		int min = (int)genome[mineralsIndex]*minerals/128;
-		if(organic - (org+DIVISION_COST) < BASIC_COST || minerals - (min+DIVISION_MINERALS_COST) < BASIC_MINERALS_COST) return STARVING;
-		if(org < BASIC_COST || min < BASIC_MINERALS_COST) return STARVING;
+		int direction = (int) genome[directionIndex] % 9;
+		if (direction == 4) return INVALID_PARAM;
+		if (organic < DIVISION_COST + BASIC_COST * 6 || minerals < DIVISION_MINERALS_COST + BASIC_MINERALS_COST * 6)
+			return STARVING;
+		int org = (int) genome[organicIndex] * organic / 128;
+		int min = (int) genome[mineralsIndex] * minerals / 128;
+		if (organic - (org + DIVISION_COST) < BASIC_COST || minerals - (min + DIVISION_MINERALS_COST) < BASIC_MINERALS_COST)
+			return STARVING;
+		if (org < BASIC_COST || min < BASIC_MINERALS_COST) return STARVING;
 		return divide(org, min, direction);
 	}
 
 	private int taxis(byte[] genome) {
-		if (organic < MOVEMENT_COST+BASIC_COST*3) return STARVING;
+		if(colonyStatus > 0) return RELATIVE;
+		if (organic < MOVEMENT_COST + BASIC_COST * 3) return STARVING;
 		int paramIndex = (commandIndex - 1) % Species.GENOME_SIZE;
-		paramIndex = paramIndex < 0? Species.GENOME_SIZE + paramIndex : paramIndex;
+		paramIndex = paramIndex < 0 ? Species.GENOME_SIZE + paramIndex : paramIndex;
 		int max = Integer.MIN_VALUE;
 		int tY = -1, tX = 0;
-		try{
-		boolean light = genome[paramIndex] % 2 == 1;
-		for (int i = -1; i < 2; i++) {
-			int nY = y + i;
-			for (int j = -1; j < 2; j++) {
-				if (nY < 0 || nY >= World.getHeight()) continue;
-				int nX = x + j;
-				WorldCell worldCell = World.getCell(nX, nY);
-				int c = light ? worldCell.getLight() : worldCell.getMinerals();
-				if (c > max) {
-					max = c;
-					tY = nY;
-					tX = nX;
+		try {
+			boolean light = genome[paramIndex] % 2 == 1;
+			for (int i = -1; i < 2; i++) {
+				int nY = y + i;
+				for (int j = -1; j < 2; j++) {
+					if (nY < 0 || nY >= World.getHeight()) continue;
+					int nX = x + j;
+					WorldCell worldCell = World.getCell(nX, nY);
+					int c = light ? worldCell.getLight() : worldCell.getMinerals();
+					if (c > max) {
+						max = c;
+						tY = nY;
+						tX = nX;
+					}
 				}
 			}
-		}
-		WorldObject worldObject = World.getWorldObject(tX, tY);
-		if (worldObject != null) {
-			if (worldObject instanceof LiveCell) {
-				return checkRelation((LiveCell) worldObject);
+			WorldObject worldObject = World.getWorldObject(tX, tY);
+			if (worldObject != null) {
+				if (worldObject instanceof LiveCell) {
+					return checkRelation((LiveCell) worldObject);
+				} else {
+					return ALIEN;
+				}
 			} else {
-				return ALIEN;
+				int direction = (tY - y + 1) * 3 + (tX - x + 1);
+				if (direction == 4) return INVALID_PARAM;
+				currentDirection = direction;
+				organic -= MOVEMENT_COST;
+				World.moveWorldObject(tX, tY, this);
+				return SUCCESS;
 			}
-		} else {
-			int direction = (tY - y + 1) * 3 + (tX - x + 1);
-			if (direction == 4) return INVALID_PARAM;
-			currentDirection = direction;
-			organic -= MOVEMENT_COST;
-			World.moveWorldObject(tX, tY, this);
-			return SUCCESS;
-		}
-		}catch (Exception e){
+		} catch (Exception e) {
 			return INVALID_PARAM;
 		}
 	}
 
 	private int moveMe(byte[] genome) throws Exception {
-		if (organic < MOVEMENT_COST+BASIC_COST*3) return STARVING;
+		if(colonyStatus != 0) return RELATIVE;
+		if (organic < MOVEMENT_COST + BASIC_COST * 3) return STARVING;
 		int paramIndex = (commandIndex - 1) % Species.GENOME_SIZE;
-		paramIndex =  paramIndex < 0? Species.GENOME_SIZE + paramIndex : paramIndex;
+		paramIndex = paramIndex < 0 ? Species.GENOME_SIZE + paramIndex : paramIndex;
 		int direction = genome[paramIndex] % 9;
 		//invalid direction
 		if (direction == 4) return INVALID_PARAM;
@@ -535,16 +548,18 @@ public class LiveCell implements WorldObject, Commands {
 		return SUCCESS;
 	}
 
-	private int checkRelation(){
+	private int checkRelation() {
 		return checkRelation(currentDirection);
 	}
+
 	private int checkRelation(int direction) {
-		int dX = direction%3 - 1;
-		int dY = direction/3 - 1;
-		WorldObject worldObject = World.getWorldObject(x+dX, y+dY);
-		if(worldObject == null || !(worldObject instanceof LiveCell)) return INVALID_PARAM;
-		else return checkRelation((LiveCell)worldObject);
+		int dX = direction % 3 - 1;
+		int dY = direction / 3 - 1;
+		WorldObject worldObject = World.getWorldObject(x + dX, y + dY);
+		if (worldObject == null || !(worldObject instanceof LiveCell)) return INVALID_PARAM;
+		else return checkRelation((LiveCell) worldObject);
 	}
+
 	private int checkRelation(LiveCell other) {
 		if (other == null) return INVALID_PARAM;
 		if (other.genomeHash == genomeHash) return CLONE;
@@ -561,7 +576,7 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private void passiveFloat() throws Exception {
-		if(isDead) return;
+		if (isDead || colonyStatus != 0) return;
 		int k = gas > 0 ? 1 : gas < 0 ? -1 : 0;
 		if (k == 0) return;
 		int nY = y + k;
@@ -571,12 +586,12 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private int divide() throws Exception {
-		if (organic < DIVISION_COST+BASIC_COST*6 || minerals < DIVISION_MINERALS_COST+BASIC_MINERALS_COST*6) {
+		if (organic < DIVISION_COST + BASIC_COST * 6 || minerals < DIVISION_MINERALS_COST + BASIC_MINERALS_COST * 6) {
 			return STARVING;
 		}
 		int kidMinerals = (minerals - DIVISION_MINERALS_COST) / 2;
 		int kidOrganic = (organic - DIVISION_COST) / 2;
-		return divide(kidOrganic, kidMinerals, getOppositeDirection(currentDirection)-1);
+		return divide(kidOrganic, kidMinerals, getOppositeDirection(currentDirection) - 1);
 	}
 
 	private int getOppositeDirection(int direction) {
@@ -606,12 +621,12 @@ public class LiveCell implements WorldObject, Commands {
 	}
 
 	private int divide(int kidOrganic, int kidMinerals, int startPosition) throws Exception {
-		int startY = (startPosition / 3)%3;
+		int startY = (startPosition / 3) % 3;
 		int startX = startPosition % 3;
 		for (int y1 = 0; y1 < 3; y1++) {
-			int cY = ((y1 + startY)%3)-1;
+			int cY = ((y1 + startY) % 3) - 1;
 			for (int x1 = 0; x1 < 3; x1++) {
-				int cX = ((x1 + startX)%3)-1;
+				int cX = ((x1 + startX) % 3) - 1;
 				if (cX == 1 && cY == 1) continue;
 				int worldY = y + cY;
 				int worldX = x + cX;
@@ -628,19 +643,78 @@ public class LiveCell implements WorldObject, Commands {
 				}
 			}
 		}
-		int nX = x+1 >= World.getWidth()? 0 : x+1;
-		if(World.getWorldObject(nX, y+1) == null && y+1 < World.getHeight()){
+		int nX = x + 1 >= World.getWidth() ? 0 : x + 1;
+		if (World.getWorldObject(nX, y + 1) == null && y + 1 < World.getHeight()) {
 			if (organic < DIVISION_COST || minerals < DIVISION_MINERALS_COST) {
 				return STARVING;
 			}
- 			createNewCell(nX, y+1, kidOrganic, kidMinerals);
+			createNewCell(nX, y + 1, kidOrganic, kidMinerals);
 			return SUCCESS;
 		}
 		//failed to divide
 		return ALIEN;
 	}
 
-	private void createNewCell(int x, int y, int kidOrganic, int kidMinerals) throws Exception {
+	private boolean passiveGrow() throws Exception {
+		if (organic < DIVISION_COST + BASIC_COST * 6 || minerals < DIVISION_MINERALS_COST + BASIC_MINERALS_COST * 6) {
+			return false;
+		}
+		int kidMinerals = (minerals - DIVISION_MINERALS_COST) / 2;
+		int kidOrganic = (organic - DIVISION_COST) / 2;
+		return grow(currentDirection, kidOrganic, kidMinerals) != INVALID_PARAM;
+	}
+
+	private int growColony(byte[] genome) throws Exception {
+		if (organic < DIVISION_COST + BASIC_COST * 3 || minerals < DIVISION_MINERALS_COST + BASIC_MINERALS_COST * 3)
+			return STARVING;
+		int directionIndex = (commandIndex - 1) % Species.GENOME_SIZE;
+		int mineralsIndex = (commandIndex - 2) % Species.GENOME_SIZE;
+		int organicIndex = (commandIndex - 3) % Species.GENOME_SIZE;
+
+		directionIndex = directionIndex < 0 ? Species.GENOME_SIZE + directionIndex : directionIndex;
+		mineralsIndex = mineralsIndex < 0 ? Species.GENOME_SIZE + mineralsIndex : mineralsIndex;
+		organicIndex = organicIndex < 0 ? Species.GENOME_SIZE + organicIndex : organicIndex;
+
+		int direction = (int) genome[directionIndex] % 9;
+
+		int org = (int) genome[organicIndex] * organic / 128;
+		int min = (int) genome[mineralsIndex] * minerals / 128;
+		if (organic - (org + DIVISION_COST) < BASIC_COST || minerals - (min + DIVISION_MINERALS_COST) < BASIC_MINERALS_COST)
+			return STARVING;
+		if (org < BASIC_COST || min < BASIC_MINERALS_COST) return STARVING;
+		return grow(direction, org, min);
+	}
+
+	private int grow(int startDirection, int kidOrganic, int kidMinerals) throws Exception {
+		startDirection = startDirection > 8 ? startDirection % 9 : startDirection;
+		if (startDirection < 8) {
+			startDirection = ((1 & startDirection) == 0) ? startDirection + 1 : startDirection;
+		} else {
+			startDirection = 1;
+		}
+		for (int i = 0; i < 8; i += 2) {
+			startDirection = (startDirection + i) % 9;
+			int kidX = (startDirection % 3) - 1 + x;
+			kidX = kidX < 0 ? World.getWidth() - 1 : kidX >= World.getWidth() ? 0 : kidX;
+			int kidY = (startDirection / 3) - 1 + y;
+			if (World.getWorldObject(kidX, kidY) == null) {
+				createColonyMate(kidX, kidY, kidOrganic, kidMinerals);
+				return SUCCESS;
+			}
+		}
+		return INVALID_PARAM;
+	}
+
+	private void createColonyMate(int kidX, int kidY, int kidOrganic, int kidMinerals) throws Exception {
+		int mateIndex = (kidY == y - 1) ? 0 : (kidX == x + 1) ? 1 : (kidY == y + 1) ? 2 : 3;
+		LiveCell kid = createNewCell(kidX, kidY, kidOrganic, kidMinerals);
+		mates[mateIndex] = kid;
+		updateColonyStatus();
+		kid.mates[(mateIndex + 2) % 4] = this;
+		kid.updateColonyStatus();
+	}
+
+	private LiveCell createNewCell(int x, int y, int kidOrganic, int kidMinerals) throws Exception {
 		organic -= DIVISION_COST + kidOrganic;
 		minerals -= DIVISION_MINERALS_COST + kidMinerals;
 		World.addPoop(DIVISION_MINERALS_COST);
@@ -653,6 +727,7 @@ public class LiveCell implements WorldObject, Commands {
 			kid = new LiveCell(mutatedSpecies, x, y, kidMinerals, kidOrganic);
 		}
 		kid.setCurrentDirection(currentDirection);
+		return kid;
 	}
 
 	private void photosynthesis() {
@@ -666,7 +741,7 @@ public class LiveCell implements WorldObject, Commands {
 		}
 		bonus += minerals / 1500.0;
 		int gain = 0;
-		gain += light*bonus;
+		gain += light * bonus;
 		organic += gain;
 		totalGained += gain;
 		photoGained += gain;
@@ -683,20 +758,20 @@ public class LiveCell implements WorldObject, Commands {
 		commandIndex = genome[(index + commandIndex) % Species.GENOME_SIZE];
 	}
 
-	private boolean isSurrounded(){
-		for(int i =0; i<9; i++){
-			int yc = i/3;
-			int xc = i%3;
-			if(xc == 0 && yc == 0) continue;
-			xc = x+xc-1;
-			yc = y+yc-1;
-			if(World.getWorldObject(xc, yc) == null) return false;
+	private boolean isSurrounded() {
+		for (int i = 0; i < 9; i++) {
+			int yc = i / 3;
+			int xc = i % 3;
+			if (xc == 0 && yc == 0) continue;
+			xc = x + xc - 1;
+			yc = y + yc - 1;
+			if (World.getWorldObject(xc, yc) == null) return false;
 		}
 		return true;
 	}
 
 	private void passiveConsumeMinerals() {
-		if(minerals > MAX_MINERALS || isDead) return;
+		if (minerals > MAX_MINERALS || isDead) return;
 		WorldCell cell = getMyCell();
 		int outerMinerals = cell.getMinerals();
 		int delta = outerMinerals - minerals;
@@ -764,14 +839,14 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public void setY(int y) {
-		if(y >= 0 && y < World.getHeight())
-		this.y = y;
+		if (y >= 0 && y < World.getHeight())
+			this.y = y;
 	}
 
 	@Override
 	public Color getColor() {
-		if(totalGained == 0) return Color.hsb(prevHue, S, B);
-		double hue = (PREDATOR_HUE*predatorGained*2 + PLANT_HUE*photoGained + CHEM_HUE*chemGained*2)/(double)totalGained;
+		if (totalGained == 0) return Color.hsb(prevHue, S, B);
+		double hue = (PREDATOR_HUE * predatorGained * 2 + PLANT_HUE * photoGained + CHEM_HUE * chemGained * 2) / (double) totalGained;
 		prevHue = hue;
 		return Color.hsb(hue, S, B);
 	}
@@ -788,7 +863,7 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public int getColonyStatus() {
-		return (int)colonyStatus;
+		return (int) colonyStatus;
 	}
 
 	@Override
