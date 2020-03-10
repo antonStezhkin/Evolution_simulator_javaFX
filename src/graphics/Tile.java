@@ -94,7 +94,7 @@ public class Tile extends StackPane {
 						borderLeft.setVisible(false);
 						borderRight.setVisible(false);
 						borderBottom.setVisible(false);
-						borderTop.setVisible(true);
+						borderTop.setVisible(false);
 						water.setFill(waterColor);
 						object.setFill(objectColor);
 						object.setStroke(objectColor);

@@ -12,7 +12,7 @@ public class LiveCell implements WorldObject, Commands {
 	private int commandIndex = 0;
 	private int organic, minerals, x, y;
 	private boolean isDead = false;
-	private WorldObject[] mates = new WorldObject[4];
+	public WorldObject[] mates = new WorldObject[4];
 	private byte colonyStatus = 0;
 	private int currentDirection = UP;
 	private byte gas = 0;
@@ -164,9 +164,11 @@ public class LiveCell implements WorldObject, Commands {
 			World.getCell(x, y).addMinerals(minerals);
 			//World.removeWorldObject(this);
 			minerals = 0;
-		} else {
-			//World.removeWorldObject(this);
+		} else if(colonyStatus == 0){
+
 			new DeadCell(x, y, organic, minerals);
+		} else{
+			new DeadColonyCell(x,y,organic,minerals,mates);
 		}
 		species.decreasePopulation();
 	}
@@ -371,7 +373,7 @@ public class LiveCell implements WorldObject, Commands {
 				tX = tX < 0 ? World.getWidth() - 1 : tX >= World.getWidth() ? 0 : tX;
 				WorldObject worldObject = World.getWorldObject(tX, tY);
 				if (worldObject != null) {
-					if (worldObject instanceof DeadCell) {
+					if (worldObject instanceof DeadCell || worldObject instanceof DeadColonyCell) {
 						worldObject.takeOrganic(150);
 					} else if (worldObject instanceof LiveCell) {
 						if (!((LiveCell) worldObject).isAcidResistant() && !isMate(worldObject)) {
@@ -714,6 +716,8 @@ public class LiveCell implements WorldObject, Commands {
 		kid.updateColonyStatus();
 	}
 
+
+
 	private LiveCell createNewCell(int x, int y, int kidOrganic, int kidMinerals) throws Exception {
 		organic -= DIVISION_COST + kidOrganic;
 		minerals -= DIVISION_MINERALS_COST + kidMinerals;
@@ -801,7 +805,7 @@ public class LiveCell implements WorldObject, Commands {
 		World.addPoop(BASIC_MINERALS_COST);
 	}
 
-	private void updateColonyStatus() {
+	public void updateColonyStatus() {
 		int status = 0;
 		for (int i = 0; i < mates.length; i++) {
 			if (mates[i] == null) {

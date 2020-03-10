@@ -43,10 +43,11 @@ public class World {
 		byte[] defaultGenome = new byte[Species.GENOME_SIZE];
 		Random r = new Random();
 		for (int i = 0; i < defaultGenome.length; i++) {
-			defaultGenome[i] = i%8 == 0? Commands.PHOTOSYNTHESIS : (byte)r.nextInt(Species.GENOME_SIZE);
+//			defaultGenome[i] = i%8 == 0? Commands.PHOTOSYNTHESIS : (byte)r.nextInt(Species.GENOME_SIZE);
 //			defaultGenome[i] = Commands.PHOTOSYNTHESIS;
+			defaultGenome[i] = i%8 == 0? Commands.PHOTOSYNTHESIS : Commands.GROW;
 		}
-		defaultGenome[35] = Commands.ACID;
+//		defaultGenome[35] = Commands.GROW;
 		Species defaultSpecies = new Species(defaultGenome);
 		defaultSpecies.setName("first");
 
