@@ -47,8 +47,8 @@ public class LiveCell implements WorldObject, Commands {
 	private static final int PASSIVE_MINERAL_MAX = 30;
 	private int totalGained = 1;
 	private int photoGained = 1;
-	private int predatorGained;
-	private int chemGained;
+	private int predatorGained = 0;
+	private int chemGained = 0;
 	private int releaseMinerals = 0;
 
 	public LiveCell(Species species, int x, int y, int minerals, int organic) throws Exception {
@@ -179,10 +179,10 @@ public class LiveCell implements WorldObject, Commands {
 		}
 		basicMetabolism();
 
-		totalGained = 0;
-		photoGained = 0;
-		chemGained = 0;
-		predatorGained = 0;
+//		totalGained = 0;
+//		photoGained = 0;
+//		chemGained = 0;
+//		predatorGained = 0;
 
 
 		boolean breakFlag = false;
@@ -567,11 +567,11 @@ public class LiveCell implements WorldObject, Commands {
 		}
 		int kidMinerals = (minerals - DIVISION_MINERALS_COST) / 2;
 		int kidOrganic = (organic - DIVISION_COST) / 2;
-		return divide(kidOrganic, kidMinerals, getOppositeDirection(currentDirection));
+		return divide(kidOrganic, kidMinerals, getOppositeDirection(currentDirection)-1);
 	}
 
 	private int getOppositeDirection(int direction) {
-		switch (direction % 9) {
+		switch (Math.abs(direction) % 9) {
 			case UP_LEFT:
 				return DOWN_RIGHT;
 			case DOWN_RIGHT:
@@ -763,8 +763,8 @@ public class LiveCell implements WorldObject, Commands {
 	public Color getColor() {
 		if(totalGained == 0) return Color.hsb(prevHue, S, B);
 		double hue = (PREDATOR_HUE*predatorGained*2 + PLANT_HUE*photoGained + CHEM_HUE*chemGained*2)/(double)totalGained;
-		prevHue = (prevHue*2+hue*3)/5;
-		return Color.hsb(prevHue, S, B);
+		prevHue = hue;
+		return Color.hsb(hue, S, B);
 	}
 
 	@Override

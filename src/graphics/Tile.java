@@ -128,6 +128,7 @@ public class Tile extends StackPane {
 					showBinds(colonyStatus);
 					water.setVisible(true);
 					water.setFill(waterColor);
+					break;
 				case NO_BORDER:
 					water.setFill(objectColor);
 					object.setVisible(false);

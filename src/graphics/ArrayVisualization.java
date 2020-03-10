@@ -78,15 +78,15 @@ public class ArrayVisualization {
 		final int cols = World.getWidth();
 		final int rows = World.getHeight();
 
-		Tile.setEmptyGeometry(Tile.Geometry.NO_BORDER);
-		Tile.setFullGeometry(Tile.Geometry.OBJECT_WATER_BORDER);
+		Tile.setEmptyGeometry(Tile.Geometry.BORDER);
+		Tile.setFullGeometry(Tile.Geometry.OBJECT_WATER);
 
 		for(int y = 0; y < rows; y++){
 			for(int x = 0; x <cols; x++){
 				Tile tile = field[y][x];
 				WorldCell content = tile.getWorldCell();
-				tile.setBorderColor(Color.SILVER);
-				tile.setObjectBorderColor(Color.SILVER);
+				tile.setBorderColor(Color.WHITESMOKE);
+				tile.setObjectBorderColor(Color.WHITESMOKE);
 
 				WorldObject worldObject = content.getWorldObject();
 				int minerals = content.getMinerals();
