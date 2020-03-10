@@ -63,7 +63,7 @@ public class World {
 		}
 
 		try {
-			new LiveCell(defaultSpecies, width / 2, height - 1, 10, 500);
+			new LiveCell(defaultSpecies, width / 2, height / 2, 10, 500);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

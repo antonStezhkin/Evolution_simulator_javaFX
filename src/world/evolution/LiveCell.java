@@ -17,6 +17,7 @@ public class LiveCell implements WorldObject, Commands {
 	private int currentDirection = UP;
 	private byte gas = 0;
 	private final int TOLERANCE = 2;
+	private boolean divide = true;
 
 	//max commands per turn
 	private static final int MAX_COMMANDS_PER_TURN = 15;
@@ -172,6 +173,7 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public void live() throws Exception {
+		if(isDead) return;
 		//check if the cell has starved to death;
 		if (organic < BASIC_COST || minerals < BASIC_COST) {
 			die();
@@ -179,18 +181,12 @@ public class LiveCell implements WorldObject, Commands {
 		}
 		basicMetabolism();
 
-//		totalGained = 0;
-//		photoGained = 0;
-//		chemGained = 0;
-//		predatorGained = 0;
-
-
 		boolean breakFlag = false;
 		byte[] genome = species.getGenome();
 		int nextGene;
 		releaseMinerals = 0;
+		divide = true;
 		for (int i = 0; i < MAX_COMMANDS_PER_TURN; i++) {
-			if(isDead) return;
 			switch (genome[commandIndex]) {
 				case PHOTOSYNTHESIS:
 					photosynthesis();
@@ -228,18 +224,7 @@ public class LiveCell implements WorldObject, Commands {
 					gotoRelativeCommandIndex(genome, nextGene);
 					breakFlag = true;
 					break;
-
-				case SPAWN :
-					nextGene = simpleDivision(genome);
-					gotoRelativeCommandIndex(genome, nextGene);
-					breakFlag = true;
-					break;
-				case DIVIDE :
-					nextGene = divide();
-					gotoRelativeCommandIndex(genome, nextGene);
-					breakFlag = true;
-					break;
-				case EAT_POOP :
+			case EAT_POOP :
 					poopToMinerals(genome);
 					incrementCommandIndex(genome);
 					break;
@@ -252,6 +237,22 @@ public class LiveCell implements WorldObject, Commands {
 					pumpMinerals();
 					incrementCommandIndex(genome);
 					breakFlag = true;
+					break;
+
+				//Reproduction
+				case SPAWN :
+					nextGene = simpleDivision(genome);
+					gotoRelativeCommandIndex(genome, nextGene);
+					breakFlag = true;
+					break;
+				case DIVIDE :
+					nextGene = divide();
+					gotoRelativeCommandIndex(genome, nextGene);
+					breakFlag = true;
+					break;
+				case NO_DIVISION :
+					divide = false;
+					incrementCommandIndex(genome);
 					break;
 
 				//Special
@@ -299,7 +300,7 @@ public class LiveCell implements WorldObject, Commands {
 			getMyCell().addMinerals(releaseMinerals);
 		}
 		passiveFloat();
-		if (organic >= MAX_ORGANIC && minerals >= DIVISION_MINERALS_COST) {
+		if (organic >= MAX_ORGANIC && minerals >= DIVISION_MINERALS_COST && divide) {
 			if(divide() == ALIEN){
 				die();
 			}
@@ -365,7 +366,7 @@ public class LiveCell implements WorldObject, Commands {
 					if(worldObject instanceof DeadCell){
 						worldObject.takeOrganic(150);
 					}else if(worldObject instanceof LiveCell) {
-						if(!((LiveCell) worldObject).isAcidResistant()) {
+						if(!((LiveCell) worldObject).isAcidResistant() && !isMate(worldObject)) {
 							worldObject.takeOrganic(5);
 							((LiveCell) worldObject).suffer();
 						}
@@ -373,6 +374,14 @@ public class LiveCell implements WorldObject, Commands {
 				}
 			}
 		}
+	}
+
+	private boolean isMate(WorldObject worldObject){
+		if(worldObject == null || !(worldObject instanceof LiveCell) || colonyStatus == 0) return false;
+		for(int i=0; i<mates.length; i++){
+			if(mates[i] == worldObject) return true;
+		}
+		return false;
 	}
 
 	private int mineralsToOrganic(byte[]genome) {

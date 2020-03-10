@@ -24,10 +24,10 @@ public interface Commands {
 
 	//MOTION
 	byte MOVE = 1; //- move int the direction, the cell is looking.
-	byte TURN_HEAD = 23; //- change cell direction;
-	byte TAXIS = 25;
-	byte GAS = 26;
-	byte SINK = 27;
+	byte TURN_HEAD = 3; //- change cell direction;
+	byte TAXIS = 5;
+	byte GAS = 6;
+	byte SINK = 7;
 
 	//COLONY INTERACTIONS
 	byte SHARE = 63;
