@@ -75,13 +75,13 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public void consumeOrganic(WorldObject food) throws Exception {
-		int gain = food.takeOrganic(MAX_ORGANIC - organic);
+		int gain = food.takeOrganic(food.getOrganic());
 		organic += gain;
 		totalGained += gain;
 		predatorGained += gain;
-		if (food instanceof LiveCell) {
-			((LiveCell) food).suffer();
-		}
+//		if (food instanceof LiveCell) {
+//			((LiveCell) food).suffer();
+//		}
 	}
 
 	public void suffer() throws Exception {
@@ -102,7 +102,7 @@ public class LiveCell implements WorldObject, Commands {
 
 	@Override
 	public void consumeMinerals(WorldObject food) {
-		minerals += food.takeMinerals(MAX_MINERALS - minerals);
+		minerals += food.takeMinerals(food.getMinerals());
 	}
 
 	private void eat(WorldObject food) throws Exception {
@@ -367,6 +367,7 @@ public class LiveCell implements WorldObject, Commands {
 					}else if(worldObject instanceof LiveCell) {
 						if(!((LiveCell) worldObject).isAcidResistant()) {
 							worldObject.takeOrganic(5);
+							((LiveCell) worldObject).suffer();
 						}
 					}
 				}
